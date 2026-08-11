@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>__TITLE__ — Data Factory Documentation</title>
+<style>
+:root{
+  --bg:#F2F4F4; --panel:#FFFFFF; --panel2:#F7FAF9;
+  --ink:#1B2528; --ink2:#5C6E72; --ink3:#8A9BA0;
+  --line:#DBE3E3; --line2:#EAF0EF;
+  /* two-hue system: teal = source/read side, copper = sink/write side */
+  --src:#0F766E;  --srcBg:#E2F1EF;
+  --snk:#B45F2A;  --snkBg:#F8ECE2;
+  --accent:#0F766E;
+  --move:#B45F2A; --moveBg:#F8ECE2;
+  --xform:#4353A8; --xformBg:#E9EBF8;
+  --orch:#334155; --orchBg:#E8ECF1;
+  --read:#0F766E; --readBg:#E2F1EF;
+  --ctl:#5C6E72;  --ctlBg:#EEF1F1;
+  --ext:#7C3AED;  --extBg:#F1EAFC;
+  --mgmt:#8A5A00; --mgmtBg:#F7EFDD;
+  --ok:#157A46;   --okBg:#E7F5EE;
+  --warn:#B45309; --warnBg:#FBF0E1;
+  --bad:#B42318;  --badBg:#FBEAE8;
+  --info:#5C6E72; --infoBg:#EEF1F1;
+  --mono:"Cascadia Code","Cascadia Mono",Consolas,"SFMono-Regular",Menlo,monospace;
+  --sans:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5}
+a{color:var(--accent)}
+.layout{display:grid;grid-template-columns:222px 1fr;min-height:100vh}
+/* ---------------- nav rail ---------------- */
+nav{background:var(--panel);border-right:1px solid var(--line);padding:1.1rem .8rem;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{font-size:.68rem;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin-bottom:.35rem}
+.doc-title{font-weight:600;font-size:1.02rem;line-height:1.25;margin-bottom:1.1rem;word-break:break-word}
+.nav-group{font-size:.64rem;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);margin:1rem .5rem .3rem}
+.nav-btn{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;border:0;background:none;font:inherit;color:var(--ink2);padding:.42rem .55rem;border-radius:6px;cursor:pointer}
+.nav-btn:hover{background:var(--panel2);color:var(--ink)}
+.nav-btn.active{background:var(--ink);color:#fff;font-weight:600;box-shadow:inset 3px 0 0 var(--snk)}
+.nav-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.nav-btn .n{font-family:var(--mono);font-size:.68rem;color:inherit;opacity:.65}
+.nav-btn.disabled{opacity:.38;cursor:not-allowed}
+/* ---------------- content ---------------- */
+main{padding:1.4rem 2rem 4rem;max-width:1280px}
+/* conveyor banner (signature): sources ▸ factory ▸ sinks */
+.conveyor{display:flex;align-items:stretch;gap:0;margin-bottom:1.5rem;font-family:var(--mono)}
+.conveyor .cell{flex:1;border:1.5px solid var(--ink);padding:.6rem .9rem;background:var(--panel)}
+.conveyor .cell:first-child{border-radius:8px 0 0 8px;border-right-width:0;box-shadow:inset 4px 0 0 var(--src)}
+.conveyor .cell:last-child{border-radius:0 8px 8px 0;border-left-width:0;box-shadow:inset -4px 0 0 var(--snk)}
+.conveyor .cell.mid{flex:1.3;background:var(--ink);color:#fff;border-color:var(--ink)}
+.conveyor .cell.mid .tag{color:#B9C6C4}
+.conveyor .joint{width:28px;display:flex;align-items:center;justify-content:center;border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink);background:var(--line2);font-weight:700;color:var(--ink2)}
+.conveyor .tag{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
+.conveyor .val{font-size:.86rem;font-weight:600;font-family:var(--sans)}
+.conveyor .sub{font-size:.7rem;color:var(--ink2)}
+.conveyor .cell.mid .sub{color:#B9C6C4}
+.conveyor .partial{color:var(--warn)}
+/* generic */
+h1{font-size:1.45rem;font-weight:650;letter-spacing:-.01em;margin-bottom:.2rem}
+h2{font-size:1.05rem;font-weight:650;margin:1.6rem 0 .6rem}
+h3{font-size:.92rem;font-weight:650;margin:1rem 0 .4rem}
+.sub{color:var(--ink2)}
+.eyebrow{font-family:var(--mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:1rem 1.1rem;margin-bottom:.8rem}
+.note{border-left:3px solid var(--warn)}
+.grid{display:grid;gap:.8rem}
+.grid.c4{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+.grid.c3{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.stat .big{font-size:1.6rem;font-weight:650;font-variant-numeric:tabular-nums}
+.stat .lbl{font-size:.74rem;color:var(--ink2)}
+table.t{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:.82rem}
+table.t th{font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);text-align:left;padding:.5rem .7rem;border-bottom:1px solid var(--line);background:var(--panel2)}
+table.t td{padding:.44rem .7rem;border-bottom:1px solid var(--line2);vertical-align:top}
+table.t tr:last-child td{border-bottom:0}
+.badge{display:inline-block;font-family:var(--mono);font-size:.62rem;letter-spacing:.05em;padding:.12rem .45rem;border-radius:4px;white-space:nowrap;text-transform:uppercase}
+.b-movement{background:var(--moveBg);color:var(--move)} .b-transform{background:var(--xformBg);color:var(--xform)}
+.b-orchestration{background:var(--orchBg);color:var(--orch)} .b-read{background:var(--readBg);color:var(--read)}
+.b-control{background:var(--ctlBg);color:var(--ctl)} .b-external{background:var(--extBg);color:var(--ext)}
+.b-management{background:var(--mgmtBg);color:var(--mgmt)} .b-other{background:var(--ctlBg);color:var(--ctl)}
+.b-ok{background:var(--okBg);color:var(--ok)} .b-warn{background:var(--warnBg);color:var(--warn)}
+.b-bad{background:var(--badBg);color:var(--bad)} .b-info{background:var(--infoBg);color:var(--info)}
+.b-src{background:var(--srcBg);color:var(--src)} .b-snk{background:var(--snkBg);color:var(--snk)}
+.b-muted{background:var(--ctlBg);color:var(--ink3)}
+.ref{font-family:var(--mono);font-size:.78rem;background:var(--panel2);border:1px solid var(--line2);border-radius:4px;padding:.05rem .3rem}
+.xl{background:none;border:0;padding:0;font:inherit;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px;text-align:left}
+.xl:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.search{width:280px;max-width:100%;padding:.42rem .6rem;border:1px solid var(--line);border-radius:6px;font:inherit;background:var(--panel);margin:0 0 .7rem}
+.search:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.filter-row{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;margin-bottom:.7rem}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:.22rem .7rem;font-size:.76rem;cursor:pointer;color:var(--ink2)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.empty{border:1.5px dashed var(--line);border-radius:8px;padding:2rem;text-align:center;color:var(--ink2);background:var(--panel2)}
+.empty b{color:var(--ink)}
+pre.code{font-family:var(--mono);font-size:.76rem;line-height:1.55;background:#1C2528;color:#D8E2E0;border-radius:6px;padding:.7rem .85rem;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+details{border:1px solid var(--line);border-radius:8px;background:var(--panel);margin-bottom:.55rem}
+details>summary{cursor:pointer;padding:.6rem .9rem;font-weight:600;list-style:none;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"▸";color:var(--ink3);font-size:.8rem;transition:transform .12s}
+details[open]>summary::before{transform:rotate(90deg)}
+details>.body{padding:.2rem .9rem .9rem;border-top:1px solid var(--line2)}
+.mut{color:var(--ink2);font-size:.8rem}
+.pill-list{display:flex;flex-wrap:wrap;gap:.3rem}
+.hl{background:var(--snkBg)!important}
+/* activity rows (3rd disclosure level) */
+.act{border:1px solid var(--line2);border-radius:6px;margin:.3rem 0;background:var(--panel)}
+.act>summary{padding:.42rem .7rem;font-weight:500;font-size:.84rem}
+.act>summary .step{font-family:var(--mono);font-size:.7rem;color:var(--ink3);min-width:1.6rem}
+.act>.body{padding:.4rem .8rem .7rem;font-size:.82rem}
+.act .kv{display:grid;grid-template-columns:130px 1fr;gap:.15rem .8rem;margin:.3rem 0}
+.act .kv .k{color:var(--ink3);font-size:.74rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;padding-top:.1rem}
+.scopehdr{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:.3rem .6rem;margin:.7rem 0 .3rem}
+/* orchestration tree */
+.tree{list-style:none;padding-left:0}
+.tree ul{list-style:none;padding-left:1.35rem;border-left:1.5px solid var(--line);margin-left:.55rem}
+.tree li{margin:.35rem 0;position:relative}
+.tree ul li::before{content:"";position:absolute;left:-1.35rem;top:.75em;width:1rem;border-top:1.5px solid var(--line)}
+.tnode{display:inline-flex;align-items:center;gap:.45rem;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:.3rem .65rem}
+.tnode .tk{font-family:var(--mono);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;padding:.08rem .35rem;border-radius:3px}
+.tk-trigger{background:var(--orchBg);color:var(--orch)}
+.tk-pipeline{background:var(--snkBg);color:var(--snk)}
+.tk-dataflow{background:var(--xformBg);color:var(--xform)}
+.tk-missing{background:var(--badBg);color:var(--bad)}
+.legend{display:flex;gap:1rem;flex-wrap:wrap;font-size:.76rem;color:var(--ink2);margin:.4rem 0 .8rem}
+.legend span{display:flex;align-items:center;gap:.35rem}
+.dot{width:9px;height:9px;border-radius:2px;display:inline-block}
+@media (max-width:860px){.layout{grid-template-columns:1fr}nav{position:static;height:auto;display:flex;flex-wrap:wrap;gap:.2rem;border-right:0;border-bottom:1px solid var(--line)}.doc-title,.brand,.nav-group{width:100%}main{padding:1rem}.conveyor{flex-direction:column}.conveyor .joint{width:auto;height:22px;border:1.5px solid var(--ink);border-top:0;border-bottom:0}.conveyor .cell:first-child{border-radius:8px 8px 0 0;border-right-width:1.5px}.conveyor .cell:last-child{border-radius:0 0 8px 8px;border-left-width:1.5px}}
+@media print{nav{display:none}.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav id="nav" aria-label="Sections"></nav>
+  <main id="main"></main>
+</div>
+<script>
+const DATA = /*__DATA__*/null;
+/* ============================================================ helpers */
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = n => (n ?? 0).toLocaleString();
+const F = DATA.factory, MODE = DATA.mode;
+const EIDX = {}; DATA.entities.forEach(e => EIDX[e.key] = e);
+const PIDX = {}; DATA.pipelines.forEach(p => PIDX[p.name] = p);
+const DFIDX = {}; DATA.dataflows.forEach(d => DFIDX[d.name] = d);
+const DSIDX = {}; DATA.datasets.forEach(d => DSIDX[d.name] = d);
+const LSIDX = {}; DATA.linkedServices.forEach(l => LSIDX[l.name] = l);
+const TRIDX = {}; DATA.triggers.forEach(t => TRIDX[t.name] = t);
+const slug = s => String(s).replace(/[^\w]+/g,"_");
+const qarg = s => esc(s).replace(/'/g,"\\'");
+function flash(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.scrollIntoView({block:"center"});
+  if(el.tagName==="DETAILS") el.open = true;
+  el.style.boxShadow = "0 0 0 3px var(--snk)";
+  setTimeout(()=>{ el.style.boxShadow=""; }, 1600);
+}
+const goTo = (tab, prefix, name) => { switchTab(tab); requestAnimationFrame(()=>flash(prefix+slug(name))); };
+const goPipe = n => goTo("pipelines","pl-",n);
+const goEnt  = k => goTo("entities","ent-",k);
+const goDf   = n => goTo("dataflows","df-",n);
+const goDs   = n => goTo("datasets","ds-",n);
+const goLs   = n => goTo("linked","ls-",n);
+const goTrg  = n => goTo("triggers","trg-",n);
+const pipeLink = n => PIDX[n] ? `<button class="xl" onclick="goPipe('${qarg(n)}')">${esc(n)}</button>`
+                              : `<span class="ref" title="pipeline not supplied">${esc(n)}</span> <span class="badge b-bad">missing</span>`;
+const entLink = k => EIDX[k] ? `<button class="xl" onclick="goEnt('${qarg(k)}')">${esc(EIDX[k].label)}</button>` : esc(k);
+const entLabel = k => EIDX[k] ? EIDX[k].label : k;
+const dfLink = n => DFIDX[n] ? `<button class="xl" onclick="goDf('${qarg(n)}')">${esc(n)}</button>`
+                             : `<span class="ref" title="data flow not supplied">${esc(n)}</span> <span class="badge b-bad">missing</span>`;
+const dsLink = n => DSIDX[n] ? `<button class="xl" onclick="goDs('${qarg(n)}')">${esc(n)}</button>`
+                             : `<span class="ref" title="dataset not supplied">${esc(n)}</span> <span class="badge b-bad">missing</span>`;
+const lsLink = n => LSIDX[n] ? `<button class="xl" onclick="goLs('${qarg(n)}')">${esc(n)}</button>`
+                             : `<span class="ref" title="linked service not supplied">${esc(n)}</span> <span class="badge b-bad">missing</span>`;
+const catBadge = c => `<span class="badge b-${esc(c)}">${esc(c)}</span>`;
+const entPills = (keys, cls) => keys.length
+  ? keys.map(k=>`<span class="badge ${cls}" style="text-transform:none;font-size:.7rem">${entLink(k)}</span>`).join(" ")
+  : '<span class="mut">—</span>';
+const missing = DATA.resolution.filter(r=>r.status==="MISSING");
+
+/* ============================================================ tabs */
+const TABS = [
+  {id:"overview",  label:"Overview",        group:"Start", avail:()=>true},
+  {id:"orchestration", label:"Orchestration", group:"Start", avail:()=>true},
+  {id:"lineage",   label:"Lineage",         group:"Start", avail:()=>true, count:()=>DATA.lineageEdges.length},
+  {id:"pipelines", label:"Pipelines",       group:"Pipelines", avail:()=>DATA.pipelines.length>0, count:()=>DATA.pipelines.length,
+   why:"No pipeline definitions were supplied in this input."},
+  {id:"dataflows", label:"Data flows",      group:"Pipelines", avail:()=>DATA.dataflows.length>0, count:()=>DATA.dataflows.length,
+   why:"No data flow definitions were supplied. If pipelines reference data flows, their transformation logic is invisible — see Warnings."},
+  {id:"datasets",  label:"Datasets",        group:"Resources", avail:()=>DATA.datasets.length>0, count:()=>DATA.datasets.length,
+   why:"No dataset definitions were supplied. Dataset references cannot be resolved to physical tables or paths — see Warnings."},
+  {id:"linked",    label:"Linked services", group:"Resources", avail:()=>DATA.linkedServices.length>0, count:()=>DATA.linkedServices.length,
+   why:"No linked service definitions were supplied. Target servers, databases and storage accounts are unknown."},
+  {id:"triggers",  label:"Triggers",        group:"Resources", avail:()=>DATA.triggers.length>0, count:()=>DATA.triggers.length,
+   why:"No trigger definitions were supplied. How and when these pipelines start is invisible to this document — they may be scheduled, event-driven, or invoked externally."},
+  {id:"warnings",  label:"Warnings",        group:"Quality", avail:()=>true, count:()=>DATA.warnings.length||null},
+  {id:"entities",  label:"Entities",        group:"Reference", avail:()=>DATA.entities.length>0, count:()=>DATA.entities.length,
+   why:"No data entities were derived from this input."},
+];
+
+function buildNav(){
+  const nav = document.getElementById("nav");
+  let html = `<div class="brand">ADF Doc Gen</div><div class="doc-title">${esc(DATA.title)}</div>`;
+  let group = "";
+  for(const t of TABS){
+    if(t.group!==group){ group=t.group; html += `<div class="nav-group">${group}</div>`; }
+    const ok = t.avail();
+    const c = ok && t.count ? t.count() : null;
+    html += ok
+      ? `<button class="nav-btn" id="nav-${t.id}" onclick="switchTab('${t.id}')">${t.label}${c?`<span class="n">${c}</span>`:""}</button>`
+      : `<button class="nav-btn disabled" title="${esc(t.why||"Not available for this input")}" tabindex="-1">${t.label}</button>`;
+  }
+  nav.innerHTML = html;
+}
+function switchTab(id){
+  const tab = TABS.find(t=>t.id===id);
+  if(!tab || !tab.avail()) return;
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+  const btn = document.getElementById("nav-"+id);
+  if(btn) btn.classList.add("active");
+  document.getElementById("main").innerHTML = RENDER[id]();
+  window.scrollTo(0,0);
+}
+
+/* ============================================================ conveyor (signature banner) */
+function conveyor(){
+  const srcSystems = new Set(), snkSystems = new Set();
+  for(const e of DATA.entities){
+    const sys = e.endpoint.system || e.endpoint.server || e.endpoint.url || e.endpoint.container;
+    const isRead = e.roles.some(r=>/source|read|lookup|metadata|existence/.test(r));
+    const isWrite = e.roles.some(r=>/sink|written|deleted|target|executed/.test(r));
+    if(sys && isRead) srcSystems.add(sys);
+    if(sys && isWrite) snkSystems.add(sys);
+  }
+  const state = MODE==="factory"
+    ? `<span class="sub">all references resolved</span>`
+    : `<span class="sub partial">partial input — ${missing.length} unresolved reference(s)</span>`;
+  return `<div class="conveyor" role="img" aria-label="Factory summary: ${MODE} mode">
+    <div class="cell"><div class="tag">Sources</div><div class="val">${num(srcSystems.size)} system(s) read</div><div class="sub">design-time, statically derived</div></div>
+    <div class="joint">▸</div>
+    <div class="cell mid"><div class="tag">Factory</div><div class="val">${esc(DATA.title)}</div><div class="sub">${num(F.pipelineCount)} pipelines · ${num(F.activityCount)} activities · ${num(F.dataflowCount)} data flows</div>${state}</div>
+    <div class="joint">▸</div>
+    <div class="cell"><div class="tag">Sinks</div><div class="val">${num(snkSystems.size)} system(s) written</div><div class="sub">what this factory produces</div></div>
+  </div>`;
+}
+
+/* ============================================================ overview */
+function rOverview(){
+  const stats = [
+    ["Pipelines", F.pipelineCount], ["Activities", F.activityCount],
+    ["Data flows", F.dataflowCount], ["Datasets", F.datasetCount],
+    ["Linked services", F.linkedServiceCount], ["Triggers", F.triggerCount],
+    ["Data entities", F.entityCount], ["Lineage edges", F.lineageEdgeCount],
+  ];
+  const modeNote = MODE==="factory"
+    ? `<div class="card note"><b>Design-time truth.</b> This document is derived statically from the factory's JSON definitions. It has no run history: nothing here can be called "working", "failing", or "actively used". Parameterised connections show the parameter or Key Vault secret <i>name</i>, never a value. A pipeline with no trigger here may still be invoked externally (REST API, Synapse, Logic Apps).</div>`
+    : `<div class="card note"><b>Partial input.</b> ${missing.length} referenced object(s) were not supplied, so parts of this analysis are incomplete — see the checklist below for exactly which JSON files to go back and export. Everything else stated is design-time truth: no run history, parameter/secret names never values, and external invocation invisible.</div>`;
+
+  const checklist = !missing.length ? "" : `
+  <h2>Input completeness — what to export next</h2>
+  <p class="sub">Referenced by the supplied objects but not included in the input. Pull each object's JSON from ADF Studio (or run against the full repo folder) and regenerate.</p>
+  <table class="t"><thead><tr><th>Kind</th><th>Missing object</th><th>Impact on this document</th><th>Referenced by</th></tr></thead><tbody>
+  ${missing.map(r=>`<tr><td><span class="badge b-bad">${esc(r.kind)}</span></td><td><span class="ref">${esc(r.name)}</span></td><td class="mut">${esc(r.impact)}</td><td class="mut">${r.referencedBy.slice(0,4).map(esc).join("<br>")}${r.referencedBy.length>4?`<br>+${r.referencedBy.length-4} more`:""}</td></tr>`).join("")}
+  </tbody></table>`;
+
+  const extSystems = {};
+  for(const ls of DATA.linkedServices){
+    const key = ls.system || ls.type || "Unknown";
+    (extSystems[key] = extSystems[key] || []).push(ls);
+  }
+  const sysCards = Object.entries(extSystems).sort().map(([sys, lss])=>`
+    <div class="card"><div class="eyebrow">${esc(sys)}</div>
+    ${lss.map(ls=>`<div style="margin-top:.35rem">${lsLink(ls.name)}
+      ${ls.keyVault?'<span class="badge b-ok">key vault</span>':""}
+      ${ls.inlineCredential?'<span class="badge b-warn">inline credential</span>':""}
+      ${ls.unreferenced?'<span class="badge b-muted">unreferenced</span>':""}
+      <div class="mut">${esc([ls.server, ls.database, ls.url].filter(Boolean).join(" · ")||"target parameterised or not stated")}</div></div>`).join("")}
+    </div>`).join("");
+
+  return `${conveyor()}
+  <h1>${esc(DATA.title)}</h1>
+  <p class="sub">Generated ${esc(DATA.generated)} by adf-doc-gen · mode: <b>${MODE}</b></p>
+  ${modeNote}
+  <div class="grid c4" style="margin-top:1rem">
+    ${stats.map(([l,v])=>`<div class="card stat"><div class="big">${num(v)}</div><div class="lbl">${l}</div></div>`).join("")}
+  </div>
+  ${checklist}
+  ${DATA.linkedServices.length?`<h2>External systems this factory touches</h2><div class="grid c3">${sysCards}</div>`:""}
+  <h2>How to read this document</h2>
+  <div class="card">
+    <p><b>Orchestration</b> is the front door: the factory as a tree, from triggers and entry points down through pipeline calls into data flows. Expand a node to drill in; click a name to jump to its detail.</p>
+    <p style="margin-top:.5rem"><b>Lineage</b> answers "where does X come from?" and "what breaks if Y dies?" — every movement edge plus the full transitive closure. <span class="badge b-src">read</span> is the teal side, <span class="badge b-snk">written</span> the copper side, everywhere in this document.</p>
+    <p style="margin-top:.5rem"><b>Pipelines</b> gives three levels per pipeline: a one-line role and rolled-up effective reads/writes (including everything it transitively invokes); the activity flow in execution order grouped by container scope; and full detail per activity.</p>
+    <p style="margin-top:.5rem"><b>Warnings</b> is where the bodies are buried — read it before changing anything.</p>
+  </div>`;
+}
+
+/* ============================================================ orchestration */
+function rOrchestration(){
+  const childEdges = DATA.orchestration.edges;
+  const kids = {};
+  for(const e of childEdges){
+    const k = e.fromKind+":"+e.from;
+    (kids[k] = kids[k] || []).push(e);
+  }
+  const seen = new Set();
+  function nodeHtml(kind, name, detail){
+    const link = kind==="trigger" ? (TRIDX[name]?`<button class="xl" onclick="goTrg('${qarg(name)}')">${esc(name)}</button>`:esc(name))
+               : kind==="dataflow" ? dfLink(name) : pipeLink(name);
+    const p = kind==="pipeline" ? PIDX[name] : null;
+    const t = kind==="trigger" ? TRIDX[name] : null;
+    return `<span class="tnode"><span class="tk tk-${kind}${(kind==='pipeline'&&!p)||(kind==='dataflow'&&!DFIDX[name])?' tk-missing':''}">${kind}</span>${link}
+      ${t&&t.state?`<span class="badge ${t.state.toLowerCase()==="started"?"b-ok":"b-warn"}">${esc(t.state)}</span>`:""}
+      ${p?`<span class="mut">${esc(p.roleLine)}</span>`:""}
+      ${detail?`<span class="mut">· ${esc(detail)}</span>`:""}</span>`;
+  }
+  function branch(kind, name, detail, depth){
+    const id = kind+":"+name;
+    const repeat = seen.has(id);
+    if(!repeat) seen.add(id);
+    const children = repeat||depth>12 ? [] : (kids[id]||[]);
+    const kidHtml = children.map(e=>branch(e.toKind, e.to, e.detail, depth+1)).join("");
+    return `<li>${nodeHtml(kind,name,detail)}${repeat&&(kids[id]||[]).length?` <span class="mut">↺ expanded above</span>`:""}
+      ${kidHtml?`<ul>${kidHtml}</ul>`:""}</li>`;
+  }
+  const triggerRoots = DATA.triggers.map(t=>branch("trigger", t.name, "", 0)).join("");
+  const entryRoots = DATA.pipelines.filter(p=>p.entryPoint)
+    .map(p=>branch("pipeline", p.name, "", 0)).join("");
+  const orphanNote = DATA.pipelines.some(p=>p.entryPoint)
+    ? `<p class="sub">Entry points are pipelines no trigger or pipeline in this factory starts. That is normal for orchestrators — but a worker pipeline here may be dead, or invoked externally (REST API, Synapse, Logic Apps); this document cannot tell which.</p>` : "";
+  return `${conveyor()}<h1>Orchestration — how work starts and cascades</h1>
+  <p class="sub">The factory as a tree: triggers first, then pipelines nothing here invokes, drilling into ExecutePipeline calls and data flows. Click any name for its detail.</p>
+  ${DATA.triggers.length?`<h2>From triggers</h2><ul class="tree">${triggerRoots}</ul>`:`<div class="empty"><b>No triggers supplied.</b><br>How these pipelines start is invisible to this document — they may be scheduled elsewhere or invoked externally.</div>`}
+  ${entryRoots?`<h2>Entry points (no known invoker in this factory)</h2>${orphanNote}<ul class="tree">${entryRoots}</ul>`:""}`;
+}
+
+/* ============================================================ lineage */
+let linFilter = "all";
+function rLineage(){
+  const movers = DATA.entities.filter(e=>e.upstream.length||e.downstream.length);
+  const roots = movers.filter(e=>!e.upstream.length);
+  const leaves = movers.filter(e=>!e.downstream.length);
+  return `${conveyor()}<h1>Data movement lineage</h1>
+  <p class="sub">The file to consult for "where does X come from?", "what writes to warehouse Y?", and "if server Z dies, which pipelines break?". Edges marked <span class="badge b-info">opaque</span> hand off to code ADF cannot see — the chain is broken there, so absence of a downstream entry past that point is <b>not</b> evidence data does not flow. <span class="badge b-warn">dynamic</span> targets are built at runtime; the static name is indicative only.</p>
+  <h2>Impact explorer</h2>
+  <div class="card">
+    <input class="search" id="lin-q" placeholder="Type a table, path, server, or dataset…" oninput="linExplore(this.value)">
+    <div id="lin-result" class="mut">Pick an entity to see everything upstream (its dependencies) and downstream (its blast radius), transitively.</div>
+  </div>
+  <h2>Movement edges <span class="mut" style="font-weight:400">(${DATA.lineageEdges.length})</span></h2>
+  <div class="filter-row">
+    ${["all","opaque","dynamic"].map(f=>`<button class="chip ${linFilter===f?"on":""}" onclick="linFilter='${f}';switchTab('lineage')">${f}</button>`).join("")}
+  </div>
+  <table class="t"><thead><tr><th>Source(s)</th><th>Sink(s)</th><th>Via</th><th>Pipeline :: Activity</th><th>Notes</th></tr></thead><tbody>
+  ${DATA.lineageEdges.filter(e=>linFilter==="all"||(linFilter==="opaque"&&e.opaque)||(linFilter==="dynamic"&&e.dynamic)).map(e=>`<tr>
+    <td>${e.sources.map(entLink).join("<br>")||"—"}</td>
+    <td>${e.sinks.map(entLink).join("<br>")||"—"}</td>
+    <td class="mut">${esc(e.mechanism)}</td>
+    <td>${pipeLink(e.pipeline)}<span class="mut"> :: ${esc(e.activity)}</span></td>
+    <td class="mut">${e.opaque?'<span class="badge b-info">opaque</span> ':""}${e.dynamic?'<span class="badge b-warn">dynamic</span> ':""}${esc(e.detail)}</td></tr>`).join("")}
+  </tbody></table>
+  <h2>Roots and terminals</h2>
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="card"><div class="eyebrow" style="color:var(--src)">Roots — external inputs</div>
+      <p class="mut">Nothing in this factory writes them; they come from outside.</p>
+      <div class="pill-list">${roots.map(e=>`<span class="badge b-src" style="text-transform:none;font-size:.72rem">${entLink(e.key)}</span>`).join(" ")||"—"}</div></div>
+    <div class="card"><div class="eyebrow" style="color:var(--snk)">Terminals — final outputs</div>
+      <p class="mut">Nothing downstream in this factory consumes them.</p>
+      <div class="pill-list">${leaves.map(e=>`<span class="badge b-snk" style="text-transform:none;font-size:.72rem">${entLink(e.key)}</span>`).join(" ")||"—"}</div></div>
+  </div>
+  <h2>Transitive closure</h2>
+  <table class="t"><thead><tr><th>Entity</th><th>Kind</th><th>Depends on (all upstream)</th><th>Feeds (all downstream)</th></tr></thead><tbody>
+  ${movers.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(e=>`<tr>
+    <td>${entLink(e.key)}</td><td class="mut">${esc(e.kind)}</td>
+    <td>${e.upstream.map(entLink).join(", ")||'<span class="mut">— root —</span>'}</td>
+    <td>${e.downstream.map(entLink).join(", ")||'<span class="mut">— terminal —</span>'}</td></tr>`).join("")}
+  </tbody></table>`;
+}
+function linExplore(q){
+  q = q.trim().toLowerCase();
+  const host = document.getElementById("lin-result");
+  if(q.length<2){ host.innerHTML = '<span class="mut">Pick an entity to see everything upstream and downstream, transitively.</span>'; return; }
+  const hits = DATA.entities.filter(e =>
+    e.label.toLowerCase().includes(q) ||
+    e.aliases.some(a=>a.toLowerCase().includes(q)) ||
+    Object.values(e.endpoint).some(v=>v&&String(v).toLowerCase().includes(q))
+  ).slice(0,8);
+  if(!hits.length){ host.innerHTML = `<span class="mut">No entity matches "${esc(q)}".</span>`; return; }
+  host.innerHTML = hits.map(e=>`
+    <div style="border-top:1px solid var(--line2);padding:.55rem 0">
+      <b>${entLink(e.key)}</b> <span class="badge b-other">${esc(e.kind)}</span> ${e.dynamic?'<span class="badge b-warn">dynamic</span>':""}
+      <div class="mut" style="margin:.25rem 0">Depends on: ${e.upstream.map(entLink).join(", ")||"— nothing in this factory (root) —"}</div>
+      <div class="mut">Feeds: ${e.downstream.map(entLink).join(", ")||"— nothing in this factory (terminal) —"}</div>
+      <div class="mut" style="margin-top:.25rem">Touched by: ${e.referencedBy.slice(0,5).map(esc).join("; ")}${e.referencedBy.length>5?" …":""}</div>
+    </div>`).join("");
+}
+
+/* ============================================================ pipelines */
+function actRow(a){
+  const flags = [];
+  if(a.dynamic) flags.push('<span class="badge b-warn">dynamic</span>');
+  if(a.opaque)  flags.push('<span class="badge b-info">opaque</span>');
+  if(a.inactive) flags.push('<span class="badge b-bad">inactive</span>');
+  const cond = a.dependsOn.filter(d=>d.on&&d.on!=="Succeeded");
+  if(cond.length) flags.push(`<span class="badge b-warn">after ${esc(cond.map(d=>`${d.activity}[${d.on}]`).join(", "))}</span>`);
+  if(a.step===0) flags.push('<span class="badge b-bad">cycle</span>');
+  const inv = a.invokesPipeline ? ` → ${pipeLink(a.invokesPipeline)}`
+            : a.invokesDataflow ? ` → ${dfLink(a.invokesDataflow)}` : "";
+  return `<details class="act">
+    <summary><span class="step">${a.step===0?"↺":a.step}</span>${esc(a.activity)} ${catBadge(a.category)} <span class="mut" style="font-weight:400">${esc(a.type)}</span>${inv} ${flags.join(" ")}</summary>
+    <div class="body">
+      ${a.description?`<p class="mut">${esc(a.description)}</p>`:""}
+      <div class="kv">
+        <div class="k">Reads</div><div>${entPills(a.reads,"b-src")}</div>
+        <div class="k">Writes</div><div>${entPills(a.writes,"b-snk")}</div>
+        ${a.detail?`<div class="k">Detail</div><div class="mut">${esc(a.detail)}</div>`:""}
+        ${a.dependsOn.length?`<div class="k">Depends on</div><div class="mut">${a.dependsOn.map(d=>`${esc(d.activity)}${d.on&&d.on!=="Succeeded"?` <span class="badge b-warn">${esc(d.on)}</span>`:""}`).join(", ")}</div>`:""}
+        ${a.parallelWith.length?`<div class="k">Parallel with</div><div class="mut">${a.parallelWith.map(esc).join(", ")}</div>`:""}
+        <div class="k">Policy</div><div class="mut">${a.retry?`retry ${a.retry}`:'<span style="color:var(--warn)">no retry</span>'}${a.timeout?` · timeout ${esc(a.timeout)}`:""}</div>
+      </div>
+      ${a.query?`<div class="k mut" style="font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;margin-top:.4rem">Query / script</div><pre class="code">${esc(a.query)}</pre>`:""}
+    </div>
+  </details>`;
+}
+function rPipelines(){
+  const cards = DATA.pipelines.map(p=>{
+    const scopes = {};
+    for(const a of p.activities) (scopes[a.scope] = scopes[a.scope] || []).push(a);
+    const scopeHtml = Object.entries(scopes).map(([scope, acts])=>`
+      ${scope==="(root)"?"":`<div class="scopehdr">inside ${esc(scope)}</div>`}
+      ${acts.slice().sort((x,y)=>(x.step===0?99:x.step)-(y.step===0?99:y.step)||x.activity.localeCompare(y.activity)).map(actRow).join("")}`).join("");
+    const badges = [
+      p.entryPoint?'<span class="badge b-orchestration">entry point</span>':"",
+      p.effectiveIncomplete.length?`<span class="badge b-bad" title="Invoked child pipeline(s) not supplied: ${esc(p.effectiveIncomplete.join(", "))}">rollup incomplete</span>`:"",
+      p.opaqueCount?`<span class="badge b-info">${p.opaqueCount} opaque</span>`:"",
+      p.dynamicCount?`<span class="badge b-warn">${p.dynamicCount} dynamic</span>`:"",
+    ].filter(Boolean).join(" ");
+    const cats = Object.entries(p.categories).map(([c,n])=>`${n} ${c}`).join(", ");
+    return `<details id="pl-${slug(p.name)}">
+      <summary>${esc(p.name)} ${badges}
+        <span class="mut" style="font-weight:400;margin-left:auto">${esc(p.roleLine)} · ${p.activityCount} activities</span></summary>
+      <div class="body">
+        ${p.description?`<p class="mut" style="margin:.5rem 0">${esc(p.description)}</p>`:""}
+        <div class="act kv" style="border:0;margin:.5rem 0">
+          ${p.folder?`<div class="k">Folder</div><div class="mut">${esc(p.folder)}</div>`:""}
+          <div class="k">Started by</div><div class="mut">${[...p.triggers.map(t=>TRIDX[t]?`<button class="xl" onclick="goTrg('${qarg(t)}')">${esc(t)}</button>`:esc(t)), ...p.invokedBy.map(esc)].join(", ")||"nothing in this factory (may be invoked externally)"}</div>
+          ${p.invokes.length?`<div class="k">Invokes</div><div>${p.invokes.map(pipeLink).join(", ")}</div>`:""}
+          ${p.dataflows.length?`<div class="k">Data flows</div><div>${p.dataflows.map(dfLink).join(", ")}</div>`:""}
+          ${Object.keys(p.parameters).length?`<div class="k">Parameters</div><div class="mut">${Object.entries(p.parameters).map(([k,v])=>`<span class="ref">${esc(k)}: ${esc(v)}</span>`).join(" ")}</div>`:""}
+          ${Object.keys(p.variables).length?`<div class="k">Variables</div><div class="mut">${Object.entries(p.variables).map(([k,v])=>`<span class="ref">${esc(k)}: ${esc(v)}</span>`).join(" ")}</div>`:""}
+          <div class="k">Activity mix</div><div class="mut">${esc(cats)}</div>
+          <div class="k">Reads (effective)</div><div>${entPills(p.effectiveReads,"b-src")}${p.effectiveIncomplete.length?` <span class="mut">— incomplete: ${p.effectiveIncomplete.map(esc).join(", ")} not supplied</span>`:""}</div>
+          <div class="k">Writes (effective)</div><div>${entPills(p.effectiveWrites,"b-snk")}${p.effectiveIncomplete.length?` <span class="mut">— incomplete</span>`:""}</div>
+        </div>
+        <h3>Activity flow <span class="mut" style="font-weight:400">(step number = execution order; equal steps can run in parallel)</span></h3>
+        ${scopeHtml}
+      </div>
+    </details>`;
+  }).join("");
+  return `${conveyor()}<h1>Pipelines</h1>
+  <p class="sub">Effective reads/writes include everything a pipeline transitively invokes (child pipelines, data flows) — the high-level answer to "what does this pipeline do overall". Expand for the activity flow; expand an activity for full detail.</p>
+  <input class="search" placeholder="Search pipelines…" oninput="fCards(this.value,'pl-list')">
+  <div id="pl-list">${cards}</div>`;
+}
+function fCards(q, listId){
+  q=q.toLowerCase();
+  document.querySelectorAll(`#${listId} > details`).forEach(d=>{
+    d.style.display = d.querySelector("summary").textContent.toLowerCase().includes(q)?"":"none";
+  });
+}
+
+/* ============================================================ data flows */
+function rDataflows(){
+  const cards = DATA.dataflows.map(df=>`
+    <details id="df-${slug(df.name)}">
+      <summary>${esc(df.name)} ${df.deadEnds.length?`<span class="badge b-warn">${df.deadEnds.length} dead end(s)</span>`:""}
+        <span class="mut" style="font-weight:400;margin-left:auto">${df.steps.length} transformations</span></summary>
+      <div class="body">
+        ${df.description?`<p class="mut" style="margin:.5rem 0">${esc(df.description)}</p>`:""}
+        <p class="mut">Used by: ${df.usedBy.map(esc).join(", ")}</p>
+        <div class="grid" style="grid-template-columns:1fr 1fr;margin:.6rem 0">
+          <div class="card" style="margin:0"><div class="eyebrow" style="color:var(--src)">Sources</div>
+            ${df.sources.map(s=>`<div style="margin-top:.3rem"><span class="ref">${esc(s.stream)}</span> → ${s.dataset?dsLink(s.dataset):esc(s.label)}</div>`).join("")||'<span class="mut">—</span>'}</div>
+          <div class="card" style="margin:0"><div class="eyebrow" style="color:var(--snk)">Sinks</div>
+            ${df.sinks.map(s=>`<div style="margin-top:.3rem"><span class="ref">${esc(s.stream)}</span> → ${s.dataset?dsLink(s.dataset):esc(s.label)}</div>`).join("")||'<span class="mut">—</span>'}</div>
+        </div>
+        <h3>Transformation chain <span class="mut" style="font-weight:400">(execution order)</span></h3>
+        <table class="t"><thead><tr><th>#</th><th>Step</th><th>Op</th><th>Inputs</th><th>Output streams</th><th>Config</th></tr></thead><tbody>
+        ${df.steps.slice().sort((a,b)=>(a.execOrder||1e6)-(b.execOrder||1e6)).map(s=>`<tr>
+          <td class="mut">${s.execOrder||"?"}</td>
+          <td>${esc(s.name)} ${s.deadEnd?'<span class="badge b-warn">dead end</span>':""}</td>
+          <td>${catBadge(s.op==="source"?"read":s.op==="sink"?"movement":"transform")} <span class="mut">${esc(s.op)}</span></td>
+          <td class="mut">${s.inputs.map(esc).join("; ")||"—"}</td>
+          <td class="mut">${s.outputStreams.map(esc).join("; ")||"—"}</td>
+          <td class="mut" style="max-width:340px">${esc(s.config)}</td></tr>`).join("")}
+        </tbody></table>
+        ${df.sinkTraces.length?`<h3>Sink traces — each sink back to its sources</h3>
+        ${df.sinkTraces.map(t=>`<div class="mut" style="margin:.25rem 0"><span class="ref">${esc(t.sink)}</span> ← sources: <b>${t.sources.map(esc).join(", ")||"?"}</b> — path: ${t.chain.map(esc).join(" → ")}</div>`).join("")}`:""}
+      </div>
+    </details>`).join("");
+  return `${conveyor()}<h1>Mapping data flows</h1>
+  <p class="sub">Each flow's transformation chain parsed from its script, in execution order, with every sink traced back to the sources that feed it. Dead ends are transformations whose output nothing consumes — dead logic, or a connection never made.</p>
+  <input class="search" placeholder="Search data flows…" oninput="fCards(this.value,'df-list')">
+  <div id="df-list">${cards}</div>`;
+}
+
+/* ============================================================ datasets */
+function rDatasets(){
+  const rows = DATA.datasets.map(d=>{
+    const ep = d.endpoint;
+    const target = [ep.schema&&ep.object?`${ep.schema}.${ep.object}`:ep.object,
+                    [ep.container,ep.path].filter(Boolean).join("/"), ep.url]
+                    .filter(Boolean).join(" · ") || d.display || "—";
+    return `<tr id="ds-${slug(d.name)}" data-s="${esc((d.name+" "+d.type+" "+d.linkedService+" "+target).toLowerCase())}">
+      <td><b>${esc(d.name)}</b>${d.unreferenced?' <span class="badge b-warn">unreferenced</span>':""}${d.dynamic?' <span class="badge b-warn">dynamic</span>':""}${d.parameterized?` <span class="badge b-other" title="parameters: ${esc(d.parameters.join(", "))}">parameterised</span>`:""}</td>
+      <td class="mut">${esc(d.type)}</td>
+      <td>${d.linkedService?lsLink(d.linkedService):'<span class="mut">—</span>'}</td>
+      <td><span class="ref">${esc(target)}</span></td>
+      <td class="mut">${d.referencedBy.slice(0,3).map(esc).join("<br>")}${d.referencedBy.length>3?`<br>+${d.referencedBy.length-3} more`:""}${d.referencedBy.length?"":'<span class="mut">not referenced by any supplied pipeline or data flow</span>'}</td></tr>`;
+  }).join("");
+  return `${conveyor()}<h1>Datasets</h1>
+  <p class="sub">Every dataset resolved to its physical target through its linked service. "Unreferenced" means no supplied pipeline or data flow uses it — pipelines not included in this input may still.</p>
+  <input class="search" placeholder="Search datasets…" oninput="fRows(this.value)">
+  <table class="t"><thead><tr><th>Dataset</th><th>Type</th><th>Linked service</th><th>Resolves to</th><th>Referenced by</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function fRows(q){
+  q=q.toLowerCase();
+  document.querySelectorAll("[data-s]").forEach(tr=>{ tr.style.display = tr.dataset.s.includes(q)?"":"none"; });
+}
+
+/* ============================================================ linked services */
+function rLinked(){
+  const cards = DATA.linkedServices.map(ls=>`
+    <details id="ls-${slug(ls.name)}">
+      <summary>${esc(ls.name)} <span class="badge b-other">${esc(ls.system)}</span>
+        ${ls.keyVault?'<span class="badge b-ok">key vault</span>':""}
+        ${ls.inlineCredential?'<span class="badge b-warn">inline credential</span>':""}
+        ${ls.parameterized?'<span class="badge b-other">parameterised</span>':""}
+        ${ls.unreferenced?'<span class="badge b-warn">unreferenced</span>':""}
+      </summary>
+      <div class="body"><div class="act kv" style="border:0;margin:.4rem 0">
+        <div class="k">Type</div><div class="mut">${esc(ls.type)}</div>
+        ${ls.server?`<div class="k">Server</div><div><span class="ref">${esc(ls.server)}</span></div>`:""}
+        ${ls.database?`<div class="k">Database</div><div><span class="ref">${esc(ls.database)}</span></div>`:""}
+        ${ls.url?`<div class="k">URL</div><div><span class="ref">${esc(ls.url)}</span></div>`:""}
+        ${ls.auth?`<div class="k">Auth</div><div class="mut">${esc(ls.auth)}</div>`:""}
+        ${ls.inlineCredential?`<div class="k"></div><div class="mut" style="color:var(--warn)">A credential-looking value sits inline in this connection string. It is not shown here; prefer Key Vault or managed identity.</div>`:""}
+        ${ls.parameters.length?`<div class="k">Parameters</div><div class="mut">${ls.parameters.map(p=>`<span class="ref">${esc(p)}</span>`).join(" ")} — values resolved at runtime; this document reports names only.</div>`:""}
+        ${Object.keys(ls.detail).length?`<div class="k">Detail</div><div class="mut">${Object.entries(ls.detail).map(([k,v])=>`${esc(k)}: ${esc(String(v))}`).join(" · ")}</div>`:""}
+        <div class="k">Referenced by</div><div class="mut">${ls.referencedBy.slice(0,6).map(esc).join("; ")||"nothing supplied references this linked service"}${ls.referencedBy.length>6?" …":""}</div>
+      </div></div>
+    </details>`).join("");
+  return `${conveyor()}<h1>Linked services — connections, never credentials</h1>
+  <p class="sub">The external systems this factory connects to. Secrets are never shown: Key Vault references report the secret name, parameterised targets report the parameter name, and inline credentials are flagged but not printed.</p>
+  <input class="search" placeholder="Search linked services…" oninput="fCards(this.value,'ls-list')">
+  <div id="ls-list">${cards}</div>`;
+}
+
+/* ============================================================ triggers */
+function rTriggers(){
+  const rows = DATA.triggers.map(t=>`<tr id="trg-${slug(t.name)}">
+    <td><b>${esc(t.name)}</b></td>
+    <td class="mut">${esc(t.type)}</td>
+    <td><span class="badge ${t.state.toLowerCase()==="started"?"b-ok":"b-warn"}">${esc(t.state)}</span></td>
+    <td>${t.startsPipelines.map(pipeLink).join(", ")||'<span class="mut">starts nothing</span>'}</td>
+    <td class="mut">${esc(t.detail)||"—"}</td></tr>`).join("");
+  return `${conveyor()}<h1>Triggers — how these pipelines start</h1>
+  <p class="sub">A trigger that is not <b>Started</b> does not fire: its pipelines only run when invoked another way. Pipelines absent from every trigger here may still be started by other pipelines, or externally.</p>
+  <table class="t"><thead><tr><th>Trigger</th><th>Type</th><th>State</th><th>Starts</th><th>Schedule / event</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ============================================================ warnings */
+let wFilter = "all";
+function rWarnings(){
+  const ws = DATA.warnings;
+  if(!ws.length) return `${conveyor()}<h1>Warnings</h1><div class="empty"><b>Nothing flagged.</b><br>The static analysis found no unresolved references, dead resources, dynamic targets, opaque hops, or hygiene issues.</div>`;
+  const cats = [...new Set(ws.map(w=>w.category))].sort();
+  const shown = ws.filter(w=>wFilter==="all"||w.category===wFilter);
+  return `${conveyor()}<h1>Warnings — read before changing anything</h1>
+  <p class="sub">Everything the static analysis flagged: where lineage goes dark, what looks dead, what is fragile, and where this document's own picture is incomplete.</p>
+  <div class="filter-row">
+    <button class="chip ${wFilter==="all"?"on":""}" onclick="wFilter='all';switchTab('warnings')">all (${ws.length})</button>
+    ${cats.map(c=>`<button class="chip ${wFilter===c?"on":""}" onclick="wFilter='${qarg(c)}';switchTab('warnings')">${esc(c)} (${ws.filter(w=>w.category===c).length})</button>`).join("")}
+  </div>
+  <table class="t"><thead><tr><th>Severity</th><th>Category</th><th>Detail</th></tr></thead><tbody>
+  ${shown.map(w=>`<tr><td><span class="badge ${w.severity==="warning"?"b-warn":"b-info"}">${esc(w.severity)}</span></td><td class="mut">${esc(w.category)}</td><td>${esc(w.message)}</td></tr>`).join("")}
+  </tbody></table>`;
+}
+
+/* ============================================================ entities */
+function rEntities(){
+  const byKind = {};
+  for(const e of DATA.entities) (byKind[e.kind] = byKind[e.kind] || []).push(e);
+  const secs = Object.keys(byKind).sort().map(kind=>`
+    <h2>${esc(kind)} <span class="mut" style="font-weight:400">(${byKind[kind].length})</span></h2>
+    ${byKind[kind].slice().sort((a,b)=>a.label.localeCompare(b.label)).map(e=>{
+      const ep = e.endpoint;
+      const epBits = [["system",ep.system],["server",ep.server],["database",ep.database],
+        ["schema",ep.schema],["object",ep.object],["container",ep.container],
+        ["path",ep.path],["url",ep.url]].filter(([,v])=>v);
+      return `<details id="ent-${slug(e.key)}">
+        <summary><span style="font-family:var(--mono);font-size:.86rem">${esc(e.label)}</span>
+          ${e.dynamic?'<span class="badge b-warn">dynamic</span>':""}
+          <span class="mut" style="font-weight:400;margin-left:auto">${esc(e.roles.join(", "))}</span></summary>
+        <div class="body"><div class="act kv" style="border:0;margin:.4rem 0">
+          ${e.aliases.length?`<div class="k">Known as</div><div class="mut">${e.aliases.map(a=>DSIDX[a]?dsLink(a):esc(a)).join(", ")}</div>`:""}
+          ${epBits.length?`<div class="k">Endpoint</div><div class="mut">${epBits.map(([k,v])=>`<span class="ref" title="${esc(k)}">${esc(k)}: ${esc(v)}</span>`).join(" ")}</div>`:""}
+          ${e.detail?`<div class="k">Detail</div><div class="mut">${esc(e.detail)}</div>`:""}
+          <div class="k">Depends on</div><div>${e.upstream.map(entLink).join(", ")||'<span class="mut">— root —</span>'}</div>
+          <div class="k">Feeds</div><div>${e.downstream.map(entLink).join(", ")||'<span class="mut">— terminal —</span>'}</div>
+          <div class="k">Touched by</div><div class="mut">${e.referencedBy.map(esc).join("; ")}</div>
+        </div></div>
+      </details>`;}).join("")}`).join("");
+  return `${conveyor()}<h1>Entities — every table, file, proc, notebook and endpoint touched</h1>
+  <p class="sub">Canonicalised so the same table reached through two datasets is one entry. Endpoint fields follow the cross-tool contract (system/server/database/schema/object/path/url/container) so this JSON can later be joined with pbi-doc-gen output for end-to-end lineage.</p>
+  <input class="search" placeholder="Search entities…" oninput="fEnts(this.value)">
+  <div id="ent-list">${secs}</div>`;
+}
+function fEnts(q){
+  q=q.toLowerCase();
+  document.querySelectorAll("#ent-list details").forEach(d=>{
+    d.style.display = d.textContent.toLowerCase().includes(q)?"":"none";
+  });
+}
+
+/* ============================================================ boot */
+const RENDER = {overview:rOverview, orchestration:rOrchestration, lineage:rLineage,
+  pipelines:rPipelines, dataflows:rDataflows, datasets:rDatasets, linked:rLinked,
+  triggers:rTriggers, warnings:rWarnings, entities:rEntities};
+buildNav();
+switchTab("overview");
+</script>
+</body>
+</html>
