@@ -82,42 +82,7 @@ OPAQUE_TYPES = {
 # SQL harvesting
 # ---------------------------------------------------------------------------
 
-SQL_READ_RE = re.compile(
-    r"\b(?:FROM|JOIN)\s+((?:\[[^\]]+\]|[\w$#]+)(?:\.(?:\[[^\]]+\]|[\w$#]+)){0,2})",
-    re.IGNORECASE)
-SQL_WRITE_RE = re.compile(
-    r"\b(?:INSERT\s+INTO|UPDATE|MERGE\s+(?:INTO\s+)?|DELETE\s+FROM|TRUNCATE\s+TABLE|"
-    r"INTO)\s+((?:\[[^\]]+\]|[\w$#]+)(?:\.(?:\[[^\]]+\]|[\w$#]+)){0,2})",
-    re.IGNORECASE)
-SQL_EXEC_RE = re.compile(
-    r"\b(?:EXEC(?:UTE)?)\s+((?:\[[^\]]+\]|[\w$#]+)(?:\.(?:\[[^\]]+\]|[\w$#]+)){0,2})",
-    re.IGNORECASE)
-SQL_NOISE = {"select", "values", "table", "dual", "unnest", "openjson", "openrowset",
-             "string_split", "set", "where", "on", "as", "with"}
-SQL_STRINGS = re.compile(r"'(?:[^']|'')*'")
-SQL_COMMENTS = re.compile(r"--[^\n]*|/\*.*?\*/", re.S)
-
-
-def _clean_sql(text: str) -> str:
-    return SQL_STRINGS.sub("''", SQL_COMMENTS.sub(" ", text or ""))
-
-
-def harvest_sql(sql_text: str) -> Tuple[List[str], List[str], List[str]]:
-    """Return (tables_read, tables_written, procs_executed) from a SQL string."""
-    if not sql_text:
-        return [], [], []
-    clean = _clean_sql(sql_text)
-
-    def grab(rx):
-        out = []
-        for m in rx.finditer(clean):
-            nm = m.group(1).strip()
-            leaf = nm.split(".")[-1].strip("[]").lower()
-            if leaf not in SQL_NOISE and not nm.startswith("@") and not nm.startswith("("):
-                out.append(nm)
-        return list(dict.fromkeys(out))
-
-    return grab(SQL_READ_RE), grab(SQL_WRITE_RE), grab(SQL_EXEC_RE)
+from .sql_harvest import harvest_sql  # noqa: E402  (token-based reader)
 
 
 # ---------------------------------------------------------------------------
@@ -181,7 +146,8 @@ def canon_table(name: str) -> str:
     parts = [p.strip().strip("[]\"`") for p in re.split(r"\.(?![^\[]*\])", name or "") if p.strip()]
     if not parts:
         return ""
-    parts = parts[-2:] if len(parts) > 2 else parts
+    # Keep the database when it is named: SalesDW.dbo.Fact and Archive.dbo.Fact are different tables.
+    parts = parts[-3:]
     return ".".join(p.lower() for p in parts)
 
 
