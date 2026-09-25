@@ -447,6 +447,57 @@ DF_OUT_RE = re.compile(r"~>\s*([\w]+)(?:\s*@\(([^)]*)\))?")
 DF_HEAD_RE = re.compile(r"^\s*(?:([\w\s,@]+?)\s+)?([\w]+)\s*\(", re.DOTALL)
 
 
+_DF_OPTION = re.compile(
+    r"\b(tableName|schemaName|fileSystem|container|folderPath|fileName|entity|objectName|"
+    r"resourceName|collection|query|store|format)\s*:\s*"
+    r"('(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\"|\((?:[^()]|\([^()]*\))*\)|\$\w+)")
+
+
+def inline_dataflow_endpoint(config: str) -> dict:
+    """What an inline data-flow source/sink points at, from its script options.
+
+    Inline sources and sinks have no dataset: the table, container or path is
+    written in the flow script (tableName: 'Orders', folderPath: ($folder)).
+    Values set by data-flow parameters ($x) are reported as dynamic.
+    """
+    opts: Dict[str, str] = {}
+    dynamic = False
+    for key, raw in _DF_OPTION.findall(config or ""):
+        if key in opts:
+            continue
+        if raw[0] in "'\"":
+            opts[key] = raw[1:-1].replace("\\'", "'")
+        else:
+            opts[key] = raw.strip("()").strip()
+            if "$" in raw:
+                dynamic = True
+                opts[key] = "@" + opts[key]    # mark as runtime-resolved
+    fmt = opts.get("format", "")
+    out = {"kind": "inline_dataset", "label": "", "dynamic": False, "query": "",
+           "schema": None, "object": None, "container": None, "path": None}
+    if fmt == "query" and opts.get("query"):
+        out["query"] = opts["query"]
+        out["dynamic"] = opts["query"].startswith("@")
+        return out
+    if opts.get("tableName"):
+        out.update(kind="table", schema=opts.get("schemaName"), object=opts["tableName"])
+        out["label"] = ".".join(x for x in (opts.get("schemaName"), opts["tableName"]) if x)
+    elif any(opts.get(k) for k in ("fileSystem", "container", "folderPath", "fileName")):
+        container = opts.get("fileSystem") or opts.get("container")
+        path = "/".join(x for x in (opts.get("folderPath"), opts.get("fileName")) if x)
+        out.update(kind="file_path", container=container, path=path or None)
+        out["label"] = "/".join(x for x in (container, path) if x)
+    else:
+        for key in ("entity", "objectName", "resourceName", "collection"):
+            if opts.get(key):
+                out["label"] = f"{key} {opts[key]}"
+                out["object"] = opts[key]
+                break
+    used = [v for v in (out["schema"], out["object"], out["container"], out["path"]) if v]
+    out["dynamic"] = any(v.startswith("@") for v in used)
+    return out
+
+
 def parse_dataflow_script(tp: dict) -> List[dict]:
     """Parse the data flow DSL into ordered transformation steps."""
     raw = tp.get("scriptLines")
@@ -1197,7 +1248,8 @@ class Analyzer:
     # ---- data flows -----------------------------------------------------
 
     def _df_endpoints(self, tp: dict, ref: str,
-                      stream_params: Optional[dict] = None) -> Dict[str, Dict[str, dict]]:
+                      stream_params: Optional[dict] = None,
+                      configs: Optional[Dict[str, str]] = None) -> Dict[str, Dict[str, dict]]:
         eps: Dict[str, Dict[str, dict]] = {"source": {}, "sink": {}}
         for key, bucket in (("sources", "source"), ("sinks", "sink")):
             role = f"dataflow {bucket}"
@@ -1216,9 +1268,36 @@ class Analyzer:
                     label = self.entities.get(node_key, {}).get("label", ds)
                 elif ls:
                     self.track_ref("linked_service", ls, ref)
-                    node_key = self.node("inline_dataset", f"inline via {ls}", role, ref,
-                                         endpoint=self._ls_endpoint(ls))
-                    label = f"inline via {ls}"
+                    ls = self.named("linkedservice", ls)
+                    ep = self._ls_endpoint(ls)
+                    inline = inline_dataflow_endpoint((configs or {}).get(nm, ""))
+                    if inline["query"] and not inline["dynamic"]:
+                        r_k, _ = self.sql_nodes(inline["query"], ref, read_role=role + " (query)",
+                                                context=ep, scope=ls)
+                        node_key = r_k[0] if len(r_k) == 1 else ""
+                        extra = r_k if len(r_k) > 1 else []
+                        label = self.entities[node_key]["label"] if node_key else f"query via {ls}"
+                        if extra:   # several tables: keep them all on the stream
+                            eps[bucket][nm] = {"key": extra[0], "keys": extra, "label": label,
+                                               "dataset": "", "linkedService": ls, "flowlet": fl}
+                            continue
+                    elif inline["label"] and not inline["dynamic"]:
+                        ep = {**ep, **{k: inline[k] for k in ("schema", "object", "container", "path")
+                                       if inline[k]}}
+                        node_key = self.node(inline["kind"], inline["label"], role, ref,
+                                             detail=f"inline in data flow, via {ls}",
+                                             endpoint=ep, scope=ls)
+                        label = inline["label"]
+                    else:
+                        # Target named by a data-flow parameter, or not stated:
+                        # keep it per stream so different streams never merge.
+                        label = f"{nm} via {ls}" + (f" ({inline['label']})" if inline["label"] else "")
+                        node_key = self.node("inline_dataset", label, role, ref,
+                                             detail="inline in data flow; target set at runtime"
+                                             if inline["dynamic"] else "inline in data flow",
+                                             endpoint=ep, scope=ls)
+                        if inline["dynamic"]:
+                            self.entities[node_key]["dynamic"] = True
                 if fl:
                     self.track_ref("dataflow", fl, ref)
                 eps[bucket][nm] = {"key": node_key, "label": label,
@@ -1242,7 +1321,6 @@ class Analyzer:
         self._df_done.add(df_name)
 
         tp = obj(props.get("typeProperties"))
-        eps = self._df_endpoints(tp, ref, stream_params)
         wrangling = props.get("type") == "WranglingDataFlow"
         # Without a data flow script (Power Query flows, older flows that list
         # their transformations), internal lineage is unknown: every source may
@@ -1272,19 +1350,22 @@ class Analyzer:
                           f"Data flow '{df_name}' lists its transformations without a script; "
                           f"each sink is assumed to depend on every source.")
 
+        configs = {st["name"]: st.get("config", "") for st in steps}
+        eps = self._df_endpoints(tp, ref, stream_params, configs)
         order = dataflow_exec_order(steps)
         dead = dataflow_dead_ends(steps) if scripted else []
         sink_names = list(eps["sink"]) or [s["name"] for s in steps if s["op"] == "sink"]
         traces = trace_dataflow(steps, sink_names) if scripted else []
 
         for sink, sources, chain in traces:
-            src_keys = [eps["source"].get(s, {}).get("key") for s in sources]
-            snk_key = eps["sink"].get(sink, {}).get("key")
-            self.edge([k for k in src_keys if k], [snk_key] if snk_key else [],
+            ends = lambda ep: ep.get("keys") or ([ep["key"]] if ep.get("key") else [])
+            src_keys = [k for s in sources for k in ends(eps["source"].get(s, {}))]
+            snk_keys = ends(eps["sink"].get(sink, {}))
+            self.edge(src_keys, snk_keys,
                       f"DataFlow:{df_name}", pipeline or "(unreferenced)",
                       activity or df_name, " → ".join(chain))
         if not scripted:
-            all_sources = [v["key"] for v in eps["source"].values() if v["key"]]
+            all_sources = [k for v in eps["source"].values() for k in (v.get("keys") or [v["key"]]) if k]
             all_sinks = [v["key"] for v in eps["sink"].values() if v["key"]] + list(activity_sinks or [])
             self.edge(all_sources, all_sinks, f"DataFlow:{df_name}", pipeline or "(unreferenced)",
                       activity or df_name,
@@ -1298,11 +1379,11 @@ class Analyzer:
             "name": df_name,
             "description": squeeze(props.get("description"), 300) or None,
             "usedBy": [ref],
-            "sources": [{"stream": k, **{kk: vv for kk, vv in v.items() if kk != "key"}}
+            "sources": [{"stream": k, **{kk: vv for kk, vv in v.items() if kk not in ("key", "keys")}}
                         for k, v in eps["source"].items()],
-            "sinks": [{"stream": k, **{kk: vv for kk, vv in v.items() if kk != "key"}}
+            "sinks": [{"stream": k, **{kk: vv for kk, vv in v.items() if kk not in ("key", "keys")}}
                       for k, v in eps["sink"].items()],
-            "sourceKeys": [v["key"] for v in eps["source"].values() if v["key"]],
+            "sourceKeys": [k for v in eps["source"].values() for k in (v.get("keys") or [v["key"]]) if k],
             "sinkKeys": [v["key"] for v in eps["sink"].values() if v["key"]],
             "steps": [{
                 "execOrder": order.get(s["name"], 0),

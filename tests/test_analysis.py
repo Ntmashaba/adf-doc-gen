@@ -269,6 +269,33 @@ class SharedDataFlow(unittest.TestCase):
         self.assertTrue({"P1::R1", "P2::R2"} <= set(src["referencedBy"]))
 
 
+class InlineDataFlowEndpoints(unittest.TestCase):
+    def test_script_defined_targets_are_named_and_kept_apart(self):
+        f = Factory(
+            sql_ls("Sql", "sql.example", "DW"),
+            ("dataflow", "DF", {"type": "MappingDataFlow", "typeProperties": {
+                "sources": [{"name": "q", "linkedService": {"referenceName": "Sql"}},
+                            {"name": "byParam", "linkedService": {"referenceName": "Sql"}}],
+                "sinks": [{"name": "out", "linkedService": {"referenceName": "Sql"}},
+                          {"name": "log", "linkedService": {"referenceName": "Sql"}}],
+                "scriptLines": [
+                    "source(format: 'query', store: 'sqlserver', query: 'SELECT * FROM stg.Orders') ~> q",
+                    "source(format: 'table', store: 'sqlserver', schemaName: 'dbo', tableName: ($t)) ~> byParam",
+                    "q, byParam union(byName: true) ~> u",
+                    "u sink(format: 'table', store: 'sqlserver', schemaName: 'dw', tableName: 'Orders') ~> out",
+                    "u sink(format: 'table', store: 'sqlserver', schemaName: 'dw', tableName: 'Log') ~> log"]}}),
+            pipeline("PL", {"name": "Run", "type": "ExecuteDataFlow", "typeProperties": {
+                "dataflow": {"referenceName": "DF", "type": "DataFlowReference"}}}),
+        )
+        labels = {e["label"] for e in f.payload["entities"]}
+        self.assertTrue({"stg.Orders", "dw.Orders", "dw.Log"} <= labels, labels)
+        dyn = [e for e in f.payload["entities"] if e["label"].startswith("byParam via")]
+        self.assertEqual(len(dyn), 1)
+        self.assertTrue(dyn[0]["dynamic"])
+        orders = f.tables("dw.Orders")[0]
+        self.assertEqual(orders["endpoint"]["server"], "sql.example")
+
+
 class ParameterisedDatasets(unittest.TestCase):
     def test_literal_bindings_stay_distinct(self):
         f = Factory(
