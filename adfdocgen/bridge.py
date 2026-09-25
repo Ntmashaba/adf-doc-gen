@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import unquote, urlparse
 
-from .analyzer import _norm_host
+from .common import _norm_host
 from .details import json_script
 from .sql_harvest import harvest_sql
 

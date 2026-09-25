@@ -376,7 +376,10 @@ adfdocgen/
   details.py              maintained factory details (validation, carry-over)
   hub.py, hub.html        the documentation home (adf-home.html)
   bridge.py, bridge.html  Power BI ← Data Factory matching
-  analyzer.py             all analysis (the single source of truth)
+  analyzer.py             analysis entry point and object/edge registry
+  common.py, activities.py, resources.py, dataflow_script.py,
+  pipelines.py, dataflows.py, graph.py, checks.py, issues.py, output.py
+                          analysis split by responsibility (see analyzer.py)
   renderer.py             payload assembly + HTML injection
   template.html           the self-contained interactive page
   word_writer.py          narrative .docx via hand-written OOXML (stdlib)

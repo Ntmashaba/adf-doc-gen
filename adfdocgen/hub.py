@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import List, Optional
 from urllib.parse import quote
 
-from .analyzer import _norm_host
+from .common import _norm_host
 from .details import json_script, read_details, validate_details
 
 HUB_MARKER = 'name="adf-documentation-hub"'
