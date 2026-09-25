@@ -178,6 +178,31 @@ table.t{table-layout:auto}
 .table-wrap{overflow-x:auto;max-width:100%}
 .where{color:var(--ink2);font-size:.78em;margin-left:.3em}
 p,h1,h2,h3,li{overflow-wrap:anywhere}
+.subtabs{display:flex;flex-wrap:wrap;gap:.2rem;border-bottom:1px solid var(--line);margin:-.2rem 0 1.1rem}
+.subtab{border:0;background:none;font:inherit;color:var(--ink2);padding:.55rem .85rem;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer}
+.subtab:hover{color:var(--ink)}.subtab.active{color:var(--ink);font-weight:600;border-bottom-color:var(--accent)}
+.subtab.disabled{opacity:.55;cursor:not-allowed}.subtab .n{font-size:.75rem;color:var(--ink2)}
+.subtab:focus-visible,.chip:focus-visible,.primary-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,400px);gap:1rem;align-items:start}
+.panel{position:sticky;top:1rem;max-height:calc(100vh - 2rem);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem;box-shadow:0 1px 2px #0f172a0d,0 4px 12px #0f172a0a}
+.panel h3{margin-top:1rem}
+tr.sel td{background:var(--accentSoft)}
+.kvl{display:grid;grid-template-columns:150px minmax(0,1fr);gap:.3rem .8rem}
+.kvl .k{color:var(--ink2);font-size:.8rem}
+ul.plain{list-style:none;padding:0}ul.plain li{margin:.3rem 0}
+.impact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem;margin-top:1rem}
+.impact-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.card.focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accentSoft)}
+.field{display:flex;flex-direction:column;gap:.25rem;font-size:.85rem;color:var(--ink2);margin:.4rem 0}
+.field input,.field select,.field textarea{font:inherit;color:var(--ink);padding:.45rem .6rem;border:1px solid var(--line);border-radius:6px;background:var(--panel);max-width:100%}
+.field select{max-width:640px}
+.details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.2rem 1rem}.details-grid .wide{grid-column:1/-1}
+.savebar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:.7rem 1rem;margin:.8rem 0}
+.savebar.dirty{border-color:var(--warn);background:var(--warnBg)}.savebar p{flex:1;margin:0}
+.primary-btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:.5rem 1rem;font:inherit;font-weight:600;cursor:pointer}
+.primary-btn:disabled{opacity:.5;cursor:not-allowed}
+.issue-head{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+@media (max-width:1000px){.split{grid-template-columns:1fr}.panel{position:static;max-height:none}.impact-grid,.impact-grid.two,.details-grid{grid-template-columns:1fr}}
 .grid>*,.layout>*{min-width:0}
 main{overflow-wrap:anywhere}
 .act.kv{display:grid;grid-template-columns:130px 1fr;gap:.15rem .8rem}
@@ -197,6 +222,7 @@ main{overflow-wrap:anywhere}
   <nav id="nav" aria-label="Sections"></nav>
   <main id="main"></main>
 </div>
+<!--__DETAILS__-->
 <script>
 const DATA = /*__DATA__*/null;
 /* ============================================================ helpers */
@@ -225,12 +251,19 @@ function flash(id){
 }
 const goTo = (tab, prefix, name) => { switchTab(tab); requestAnimationFrame(()=>flash(prefix+slug(name))); };
 const goPipe = n => goTo("pipelines","pl-",n);
-const goEnt  = k => goTo("entities","ent-",k);
+const goEnt  = k => { SEL_OBJ = k; switchTab("objects"); requestAnimationFrame(()=>{
+  const row = document.getElementById("obj-"+slug(k)); if(row) row.scrollIntoView({block:"center"}); }); };
 const goDf   = n => goTo("dataflows","df-",n);
 const goDs   = n => goTo("datasets","ds-",n);
 const goLs   = n => goTo("linked","ls-",n);
 const goTrg  = n => goTo("triggers","trg-",n);
 const GO = {pipe:goPipe, ent:goEnt, df:goDf, ds:goDs, ls:goLs, trg:goTrg,
+            section: openSection, view: switchTab,
+            obj: k => { SEL_OBJ = k; renderObjectPanel(); },
+            impact: k => { IMPACT = k; switchTab("impact"); },
+            csv: name => downloadCsv(name),
+            issuefilter: p => { ISSUE_FILTER = p; switchTab("issues"); },
+            objkind: k => { OBJ_KIND = k; switchTab("objects"); },
             wfilter: c => { wFilter = c; switchTab("warnings"); }};
 document.addEventListener("click", ev => {
   const b = ev.target.closest("[data-go]");
@@ -259,52 +292,78 @@ const entPills = (keys, cls) => keys.length
   : '<span class="mut">—</span>';
 const missing = DATA.resolution.filter(r=>r.status==="MISSING");
 
-/* ============================================================ tabs */
-const TABS = [
-  {id:"overview",  label:"Overview",        group:"Start", avail:()=>true},
-  {id:"orchestration", label:"Orchestration", group:"Start", avail:()=>true},
-  {id:"lineage",   label:"Lineage",         group:"Start", avail:()=>true, count:()=>DATA.lineageEdges.length},
-  {id:"pipelines", label:"Pipelines",       group:"Pipelines", avail:()=>DATA.pipelines.length>0, count:()=>DATA.pipelines.length,
-   why:"No pipeline definitions were supplied in this input."},
-  {id:"dataflows", label:"Data flows",      group:"Pipelines", avail:()=>DATA.dataflows.length>0, count:()=>DATA.dataflows.length,
-   why:"No data flow definitions were supplied. If pipelines reference data flows, their transformation logic is invisible — see Warnings."},
-  {id:"datasets",  label:"Datasets",        group:"Resources", avail:()=>DATA.datasets.length>0, count:()=>DATA.datasets.length,
-   why:"No dataset definitions were supplied. Dataset references cannot be resolved to physical tables or paths — see Warnings."},
-  {id:"linked",    label:"Linked services", group:"Resources", avail:()=>DATA.linkedServices.length>0, count:()=>DATA.linkedServices.length,
-   why:"No linked service definitions were supplied. Target servers, databases and storage accounts are unknown."},
-  {id:"triggers",  label:"Triggers",        group:"Resources", avail:()=>DATA.triggers.length>0, count:()=>DATA.triggers.length,
-   why:"No trigger definitions were supplied. How and when these pipelines start is invisible to this document — they may be scheduled, event-driven, or invoked externally."},
-  {id:"warnings",  label:"Warnings",        group:"Quality", avail:()=>true, count:()=>DATA.warnings.length||null},
-  {id:"entities",  label:"Entities",        group:"Reference", avail:()=>DATA.entities.length>0, count:()=>DATA.entities.length,
-   why:"No data entities were derived from this input."},
+/* ============================================================ sections and views */
+/* Six sections; each holds one or more views shown as sub-tabs. */
+const SECTIONS = [
+  {id:"overview",  label:"Overview"},
+  {id:"data",      label:"Data & sources"},
+  {id:"pipelines", label:"Pipelines & orchestration"},
+  {id:"impact",    label:"Impact & dependencies"},
+  {id:"issues",    label:"Review issues"},
+  {id:"details",   label:"Factory details"},
 ];
+const TABS = [
+  {id:"overview", section:"overview", label:"Overview", avail:()=>true},
+  {id:"objects", section:"data", label:"Objects", avail:()=>DATA.entities.length>0, count:()=>DATA.entities.length,
+   why:"No tables, files or other objects were found in this input."},
+  {id:"datasets", section:"data", label:"Datasets", avail:()=>DATA.datasets.length>0, count:()=>DATA.datasets.length,
+   why:"No dataset definitions were supplied. Dataset references cannot be resolved to physical tables or paths."},
+  {id:"linked", section:"data", label:"Linked services", avail:()=>DATA.linkedServices.length>0, count:()=>DATA.linkedServices.length,
+   why:"No linked service definitions were supplied. Target servers, databases and storage accounts are unknown."},
+  {id:"orchestration", section:"pipelines", label:"Orchestration", avail:()=>true},
+  {id:"pipelines", section:"pipelines", label:"Pipelines", avail:()=>DATA.pipelines.length>0, count:()=>DATA.pipelines.length,
+   why:"No pipeline definitions were supplied in this input."},
+  {id:"dataflows", section:"pipelines", label:"Data flows", avail:()=>DATA.dataflows.length>0, count:()=>DATA.dataflows.length,
+   why:"No data flow definitions were supplied. If pipelines reference data flows, their logic is not visible."},
+  {id:"triggers", section:"pipelines", label:"Triggers", avail:()=>DATA.triggers.length>0, count:()=>DATA.triggers.length,
+   why:"No trigger definitions were supplied. How and when these pipelines start is not visible here."},
+  {id:"impact", section:"impact", label:"Impact explorer", avail:()=>DATA.entities.length>0||DATA.pipelines.length>0},
+  {id:"lineage", section:"impact", label:"Movement edges", avail:()=>true, count:()=>DATA.lineageEdges.length},
+  {id:"issues", section:"issues", label:"Priority issues", avail:()=>true, count:()=>(DATA.issues||[]).length||null},
+  {id:"warnings", section:"issues", label:"All findings and notes", avail:()=>true, count:()=>DATA.warnings.length||null},
+  {id:"details", section:"details", label:"Factory details", avail:()=>true},
+];
+const LAST_VIEW = {};   // the view last open in each section
 
 function buildNav(){
   const nav = document.getElementById("nav");
   let html = `<div class="brand">ADF Doc Gen</div><div class="doc-title">${esc(DATA.title)}</div>`;
-  let group = "";
-  for(const t of TABS){
-    if(t.group!==group){ group=t.group; html += `<div class="nav-group">${group}</div>`; }
-    const ok = t.avail();
-    const c = ok && t.count ? t.count() : null;
-    html += ok
-      ? `<button class="nav-btn" id="nav-${t.id}" onclick="switchTab('${t.id}')">${t.label}${c?`<span class="n">${c}</span>`:""}</button>`
-      : `<button class="nav-btn disabled" title="${esc(t.why||"Not available for this input")}" tabindex="-1">${t.label}</button>`;
+  for(const sec of SECTIONS){
+    const views = TABS.filter(t=>t.section===sec.id);
+    const n = sec.id==="issues" ? (DATA.issues||[]).length : null;
+    html += `<button class="nav-btn" id="sec-${sec.id}" data-go="section" data-arg="${sec.id}">${sec.label}${n?`<span class="n">${n}</span>`:""}</button>`;
   }
   nav.innerHTML = html;
+}
+function subtabs(sectionId, activeId){
+  const views = TABS.filter(t=>t.section===sectionId);
+  if(views.length<2) return "";
+  return `<div class="subtabs" role="tablist">${views.map(t=>{
+    const ok = t.avail(), c = ok && t.count ? t.count() : null;
+    return ok ? `<button class="subtab${t.id===activeId?" active":""}" role="tab" aria-selected="${t.id===activeId}" id="nav-${t.id}" data-go="view" data-arg="${t.id}">${esc(t.label)}${c?` <span class="n">${c}</span>`:""}</button>`
+              : `<button class="subtab disabled" title="${esc(t.why||"Not available for this input")}" aria-disabled="true" tabindex="-1">${esc(t.label)}</button>`;
+  }).join("")}</div>`;
+}
+function openSection(id){
+  const views = TABS.filter(t=>t.section===id && t.avail());
+  const target = views.find(t=>t.id===LAST_VIEW[id]) || views[0];
+  if(target) switchTab(target.id);
 }
 let CURRENT = null; const VIEW_STATE = {};
 function switchTab(id){
   const tab = TABS.find(t=>t.id===id);
   if(!tab || !tab.avail()) return;
-  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
-  const btn = document.getElementById("nav-"+id);
-  if(btn) btn.classList.add("active");
+  LAST_VIEW[tab.section] = id;
+  document.querySelectorAll(".nav-btn").forEach(b=>{
+    const on = b.id==="sec-"+tab.section;
+    b.classList.toggle("active", on);
+    if(on) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current");
+  });
   const main = document.getElementById("main");
   if(CURRENT) VIEW_STATE[CURRENT] = {
     q: [...main.querySelectorAll("input.search")].map(i=>i.value),
     open: [...main.querySelectorAll("details[open][id]")].map(d=>d.id)};
-  main.innerHTML = RENDER[id]();
+  main.innerHTML = subtabs(tab.section, id) + RENDER[id]();
   CURRENT = id;
   const st = VIEW_STATE[id];
   if(st){
@@ -394,19 +453,42 @@ function rOverview(){
   <h1>${esc(DATA.title)}</h1>
   <p class="sub">Generated ${esc(DATA.generated)} by adf-doc-gen · mode: <b>${MODE}</b></p>
   ${modeNote}
+  ${(()=>{ const d = DETAILS, bits = [["Environment",d.environment],["Owner",d.owner],["Source",d.sourceLocation],["Runbook",d.runbook]].filter(([,v])=>v);
+    return bits.length ? `<div class="card kvl">${bits.map(([k,v])=>`<div class="k">${k}</div><div>${esc(v)}</div>`).join("")}</div>`
+                       : `<p class="mut">No owner or runbook recorded yet. ${go("section","details","Add factory details")}</p>`; })()}
   <div class="grid c4" style="margin-top:1rem">
     ${stats.map(([l,v])=>`<div class="card stat"><div class="big">${num(v)}</div><div class="lbl">${l}</div></div>`).join("")}
   </div>
   ${coverageCard()}
   ${checklist}
   ${DATA.linkedServices.length?`<h2>External systems this factory touches</h2><div class="grid c3">${sysCards}</div>`:""}
-  <h2>How to read this document</h2>
-  <div class="card">
-    <p><b>Orchestration</b> is the front door: the factory as a tree, from triggers and entry points down through pipeline calls into data flows. Expand a node to drill in; click a name to jump to its detail.</p>
-    <p style="margin-top:.5rem"><b>Lineage</b> answers "where does X come from?" and "what breaks if Y dies?" — every movement edge plus the full transitive closure. <span class="badge b-src">read</span> is the teal side, <span class="badge b-snk">written</span> the copper side, everywhere in this document.</p>
-    <p style="margin-top:.5rem"><b>Pipelines</b> gives three levels per pipeline: a one-line role and rolled-up effective reads/writes (including everything it transitively invokes); the activity flow in execution order grouped by container scope; and full detail per activity.</p>
-    <p style="margin-top:.5rem"><b>Warnings</b> is where the bodies are buried — read it before changing anything.</p>
-  </div>`;
+  ${journeys()}
+  ${priorityIssues()}`;
+}
+function journeys(){
+  // Each way work starts: a trigger or an entry-point pipeline, and what the run reads and writes.
+  const starts = [
+    ...DATA.triggers.flatMap(t=>t.startsPipelines.map(pl=>({how:TRIDX[t.name]?go("trg",t.name,esc(t.name)):esc(t.name), note:t.detail, state:t.state, pl}))),
+    ...DATA.pipelines.filter(p=>p.entryPoint).map(p=>({how:'<span class="mut">no trigger here</span>', note:"", state:"", pl:p.name}))];
+  if(!starts.length) return "";
+  const systems = keys => [...new Set(keys.map(k=>EIDX[k]).filter(e=>e&&PHYSICAL.has(e.kind)).map(e=>e.endpoint.system||e.endpoint.server||"unknown system"))];
+  const rows = starts.map(s=>{ const p = PIDX[s.pl];
+    if(!p) return `<tr><td>${s.how}</td><td>${pipeLink(s.pl)}</td><td colspan="2" class="mut">pipeline not supplied</td></tr>`;
+    const r = p.effectiveReads.filter(k=>PHYSICAL.has(EIDX[k]?.kind)), w = p.effectiveWrites.filter(k=>PHYSICAL.has(EIDX[k]?.kind));
+    return `<tr><td>${s.how}${s.state&&s.state.toLowerCase()!=="started"?` <span class="badge b-warn">${esc(s.state)}</span>`:""}<div class="mut">${esc(s.note||"")}</div></td>
+      <td>${pipeLink(s.pl)}<div class="mut">${esc(p.roleLine)}</div></td>
+      <td>${r.length} object(s)<div class="mut">${esc(systems(r).join(", ")||"—")}</div></td>
+      <td>${w.length} object(s)<div class="mut">${esc(systems(w).join(", ")||"—")}</div>${p.effectiveIncomplete.length?' <span class="badge b-bad">incomplete</span>':""}</td></tr>`;}).join("");
+  return `<h2>How work starts and what it touches</h2>
+  <div class="table-wrap"><table class="t"><thead><tr><th>Started by</th><th>Pipeline</th><th>Reads (incl. called pipelines)</th><th>Writes</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function priorityIssues(){
+  const top = (DATA.issues||[]).filter(i=>i.priority!=="low").slice(0,5);
+  const n = (DATA.issues||[]).length;
+  if(!n) return `<h2>Review issues</h2><div class="card"><b>No issues to review.</b> <span class="mut">See Review issues › All findings and notes for the limits of static analysis.</span></div>`;
+  return `<h2>Review first</h2>
+  ${top.map(i=>`<div class="card issue"><div class="issue-head"><span class="badge ${PRIO[i.priority]}">${esc(i.priority)}</span> <b>${esc(i.category)}</b> ${i.resource?"· "+resourceLink(i.resource):""}</div><p class="mut" style="margin-top:.3rem">${esc(i.action)}</p></div>`).join("")||'<p class="mut">No high or medium priority issues.</p>'}
+  <p>${go("section","issues",`All ${n} review issue(s)`)}</p>`;
 }
 
 /* ============================================================ orchestration */
@@ -712,48 +794,287 @@ function wTable(ws, sev=true){
   </tbody></table></div>`;
 }
 
-/* ============================================================ entities */
-function rEntities(){
-  const byKind = {};
-  for(const e of DATA.entities) (byKind[e.kind] = byKind[e.kind] || []).push(e);
-  const secs = Object.keys(byKind).sort().map(kind=>`
-    <h2>${esc(kind)} <span class="mut" style="font-weight:400">(${byKind[kind].length})</span></h2>
-    ${byKind[kind].slice().sort((a,b)=>a.label.localeCompare(b.label)).map(e=>{
-      const ep = e.endpoint;
-      const epBits = [["system",ep.system],["server",ep.server],["database",ep.database],
-        ["schema",ep.schema],["object",ep.object],["container",ep.container],
-        ["path",ep.path],["url",ep.url]].filter(([,v])=>v);
-      return `<details id="ent-${slug(e.key)}">
-        <summary><span style="font-family:var(--mono);font-size:.86rem">${esc(e.label)}</span>
-          ${e.dynamic?'<span class="badge b-warn">dynamic</span>':""}
-          <span class="mut" style="font-weight:400;margin-left:auto">${esc(e.roles.join(", "))}</span></summary>
-        <div class="body"><div class="act kv" style="border:0;margin:.4rem 0">
-          ${e.aliases.length?`<div class="k">Known as</div><div class="mut">${e.aliases.map(a=>DSIDX[a]?dsLink(a):esc(a)).join(", ")}</div>`:""}
-          ${epBits.length?`<div class="k">Endpoint</div><div class="mut">${epBits.map(([k,v])=>`<span class="ref" title="${esc(k)}">${esc(k)}: ${esc(v)}</span>`).join(" ")}</div>`:""}
-          ${e.detail?`<div class="k">Detail</div><div class="mut">${esc(e.detail)}</div>`:""}
-          <div class="k">Depends on</div><div>${e.upstream.map(entLink).join(", ")||'<span class="mut">— root —</span>'}</div>
-          <div class="k">Feeds</div><div>${e.downstream.map(entLink).join(", ")||'<span class="mut">— terminal —</span>'}</div>
-          <div class="k">Touched by</div><div class="mut">${e.referencedBy.map(esc).join("; ")}</div>
-        </div></div>
-      </details>`;}).join("")}`).join("");
-  return `<h1>Entities — every table, file, proc, notebook and endpoint touched</h1>
-  <p class="sub">Canonicalised so the same table reached through two datasets is one entry. Endpoint fields follow the cross-tool contract (system/server/database/schema/object/path/url/container) so this JSON can later be joined with pbi-doc-gen output for end-to-end lineage.</p>
-  <input class="search" placeholder="Search entities…" oninput="fEnts(this.value)">
-  <div id="ent-list">${secs}</div>`;
+/* ============================================================ shared: csv */
+function csvCell(v){ v = v==null ? "" : String(v); return /[",\n\r]/.test(v) ? `"${v.replace(/"/g,'""')}"` : v; }
+function toCsv(cols, rows){ return [cols.map(c=>csvCell(c[0])).join(","), ...rows.map(r=>cols.map(c=>csvCell(c[1](r))).join(","))].join("\r\n"); }
+const CSV = {
+  objects: () => toCsv([["key",e=>e.key],["kind",e=>e.kind],["name",e=>e.label],["system",e=>e.endpoint.system],
+    ["server",e=>e.endpoint.server||e.endpoint.url],["database",e=>e.endpoint.database],["container",e=>e.endpoint.container],
+    ["schema",e=>e.endpoint.schema],["object",e=>e.endpoint.object],["path",e=>e.endpoint.path],["dynamic",e=>e.dynamic],
+    ["datasets",e=>e.aliases.join("; ")],["linked services",e=>(e.linkedServices||[]).join("; ")],
+    ["pipelines",e=>(e.pipelines||[]).join("; ")],["triggers",e=>(e.triggers||[]).join("; ")]], DATA.entities),
+  usage: () => toCsv([["object key",r=>r.key],["object",r=>r.label],["operation",r=>r.u.operation],["pipeline",r=>r.u.pipeline],
+    ["activity",r=>r.u.activity],["activity type",r=>r.u.type],["dynamic",r=>r.u.dynamic],["opaque",r=>r.u.opaque]],
+    DATA.entities.flatMap(e=>(e.usage||[]).map(u=>({key:e.key,label:e.label,u})))),
+  edges: () => toCsv([["sources",e=>e.sources.map(entLabel).join("; ")],["sinks",e=>e.sinks.map(entLabel).join("; ")],
+    ["mechanism",e=>e.mechanism],["pipeline",e=>e.pipeline],["activity",e=>e.activity],["dynamic",e=>e.dynamic],
+    ["opaque",e=>e.opaque],["detail",e=>e.detail]], DATA.lineageEdges),
+  issues: () => toCsv([["priority",i=>i.priority],["category",i=>i.category],["resource",i=>i.resource],
+    ["finding",i=>i.message],["why it matters",i=>i.why],["next action",i=>i.action]], DATA.issues||[]),
+};
+function downloadCsv(name){
+  const blob = new Blob(["\ufeff"+CSV[name]()], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = `${(DATA.title||"factory").replace(/[^\w.-]+/g,"_")}-${name}.csv`; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
 }
-function fEnts(q){
-  q=q.toLowerCase();
-  document.querySelectorAll("#ent-list details").forEach(d=>{
-    d.style.display = d.textContent.toLowerCase().includes(q)?"":"none";
+const csvBtn = (name, label) => `<button class="chip" data-go="csv" data-arg="${name}">Download ${label} (CSV)</button>`;
+
+/* ============================================================ data & sources: objects */
+let SEL_OBJ = null, OBJ_KIND = "physical";
+const PHYSICAL = new Set(["table","file_path","inline_dataset","dataset"]);
+const KIND_LABEL = {table:"Table", file_path:"File / folder", inline_dataset:"Inline source", dataset:"Unresolved dataset",
+  stored_procedure:"Procedure", notebook:"Notebook", code_artifact:"Code", endpoint:"Endpoint", linked_service:"Connection"};
+const opBadge = op => `<span class="badge ${({read:"b-src",write:"b-snk",delete:"b-bad",execute:"b-transform",call:"b-external"})[op]||"b-other"}">${esc(op)}</span>`;
+function objMatches(e){
+  if(OBJ_KIND==="physical") return PHYSICAL.has(e.kind);
+  if(OBJ_KIND==="code") return ["stored_procedure","notebook","code_artifact","endpoint"].includes(e.kind);
+  if(OBJ_KIND==="connections") return e.kind==="linked_service";
+  return true;
+}
+function rObjects(){
+  const shown = DATA.entities.filter(objMatches)
+    .sort((a,b)=>(PHYSICAL.has(b.kind)-PHYSICAL.has(a.kind)) || a.label.localeCompare(b.label));
+  const kinds = [["physical","Tables and files"],["code","Procedures, notebooks, endpoints"],["connections","Connections"],["all","Everything"]];
+  const rows = shown.map(e=>{
+    const ops = new Set((e.usage||[]).map(u=>u.operation));
+    return `<tr id="obj-${slug(e.key)}" class="${e.key===SEL_OBJ?"sel":""}">
+      <td>${go("obj", e.key, esc(e.label))}${e.dynamic?' <span class="badge b-warn">dynamic</span>':""}</td>
+      <td class="mut">${esc(entWhere(e)||"—")}</td>
+      <td class="mut">${esc(KIND_LABEL[e.kind]||e.kind)}</td>
+      <td>${[...ops].sort().map(opBadge).join(" ")||'<span class="mut">—</span>'}</td>
+      <td class="mut">${(e.pipelines||[]).length}</td></tr>`;}).join("");
+  return `<h1>Objects: what this factory reads and writes</h1>
+  <p class="sub">Physical tables, files and folders first, each identified by where it lives (server or storage account, database or container, name). Select one to see every pipeline and activity that reads, writes, deletes or runs it, and what starts them.</p>
+  <div class="filter-row">${kinds.map(([k,l])=>`<button class="chip ${OBJ_KIND===k?"on":""}" data-go="objkind" data-arg="${k}">${l}</button>`).join("")}
+    <span style="flex:1"></span>${csvBtn("objects","objects")} ${csvBtn("usage","usage")}</div>
+  <input class="search" placeholder="Filter by name, server, database, pipeline…" oninput="fObjects(this.value)" aria-label="Filter objects">
+  <div class="split">
+    <div class="table-wrap"><table class="t" id="obj-table"><thead><tr><th>Object</th><th>Where</th><th>Kind</th><th>Operations</th><th>Pipelines</th></tr></thead>
+      <tbody>${rows||'<tr><td colspan="5" class="mut">Nothing of this kind in the input.</td></tr>'}</tbody></table></div>
+    <aside class="panel" id="obj-panel" aria-live="polite">${objectPanel()}</aside>
+  </div>`;
+}
+function fObjects(q){
+  q = q.toLowerCase();
+  document.querySelectorAll("#obj-table tbody tr").forEach(tr=>{
+    const e = EIDX[[...EIDX_KEYS].find(k=>"obj-"+slug(k)===tr.id)];
+    const hay = e ? [e.label, entWhere(e), ...(e.pipelines||[]), ...e.aliases].join(" ").toLowerCase() : tr.textContent.toLowerCase();
+    tr.style.display = hay.includes(q) ? "" : "none";
   });
+}
+const EIDX_KEYS = new Set(Object.keys(EIDX));
+function renderObjectPanel(){
+  const p = document.getElementById("obj-panel");
+  if(!p){ switchTab("objects"); return; }
+  p.innerHTML = objectPanel();
+  document.querySelectorAll("#obj-table tbody tr").forEach(tr=>tr.classList.toggle("sel", tr.id==="obj-"+slug(SEL_OBJ)));
+  p.focus && p.scrollTo(0,0);
+}
+function objectPanel(){
+  const e = EIDX[SEL_OBJ];
+  if(!e) return `<div class="mut">Select an object to see its detail.</div>`;
+  const ep = e.endpoint;
+  const where = [["System",ep.system],["Server / account",ep.server||ep.url],["Database",ep.database],["Container",ep.container],
+    ["Schema",ep.schema],["Object",ep.object],["Path",ep.path]].filter(([,v])=>v);
+  const dsSources = e.aliases.filter(a=>DSIDX[a]).map(a=>`${dsLink(a)}${DSIDX[a].source?` <span class="mut">${esc(DSIDX[a].source)}</span>`:""}`);
+  const usage = (e.usage||[]).map(u=>`<tr><td>${opBadge(u.operation)}</td><td>${u.pipeline?pipeLink(u.pipeline):(u.dataflow?dfLink(u.dataflow):"—")}<div class="mut">${esc(u.activity||"")}${u.type?` · ${esc(u.type)}`:""}</div></td>
+    <td>${u.dynamic?'<span class="badge b-warn">dynamic</span>':""}${u.opaque?'<span class="badge b-info">opaque</span>':""}</td></tr>`).join("");
+  return `<div class="eyebrow">${esc(KIND_LABEL[e.kind]||e.kind)}</div>
+  <h2 style="margin-top:.2rem">${esc(e.label)}</h2>
+  ${e.dynamic?`<p><span class="badge b-warn">dynamic</span> <span class="mut">Resolved at runtime; this is what can be known before the run.</span></p>`:""}
+  ${where.length?`<div class="kvl">${where.map(([k,v])=>`<div class="k">${k}</div><div>${esc(v)}</div>`).join("")}</div>`:`<p class="mut">Location not stated in the definitions.</p>`}
+  <h3>Used by</h3>
+  ${usage?`<table class="t"><tbody>${usage}</tbody></table>`:`<p class="mut">No activity in this input uses it.</p>`}
+  <h3>Started by</h3><p>${(e.triggers||[]).map(t=>TRIDX[t]?go("trg",t,esc(t)):esc(t)).join(", ")||'<span class="mut">No trigger in this input starts the pipelines that use it.</span>'}</p>
+  ${(e.linkedServices||[]).length?`<h3>Connection</h3><p>${e.linkedServices.map(lsLink).join(", ")}</p>`:""}
+  ${dsSources.length?`<h3>Defined by</h3><p>${dsSources.join("<br>")}</p>`:""}
+  <h3>Depends on</h3><p>${e.upstream.map(entLink).join(", ")||'<span class="mut">Nothing in this factory (an external input).</span>'}</p>
+  <h3>Feeds</h3><p>${e.downstream.map(entLink).join(", ")||'<span class="mut">Nothing in this factory (a final output).</span>'}</p>
+  <p style="margin-top:1rem"><button class="chip on" data-go="impact" data-arg="${esc(e.key)}">Show impact of a change</button></p>`;
+}
+
+/* ============================================================ impact */
+let IMPACT = null;
+/* Walk movement edges from a set of objects. An edge that is dynamic or
+   opaque makes everything reached through it "possible" rather than confirmed. */
+function walk(startKeys, forward){
+  const state = new Map();   // key -> "confirmed" | "possible"
+  const queue = startKeys.map(k=>[k,"confirmed"]);
+  const pipes = new Map();
+  const better = (a,b)=> a==="confirmed"||b==="confirmed" ? "confirmed" : "possible";
+  while(queue.length){
+    const [k, how] = queue.shift();
+    for(const e of DATA.lineageEdges){
+      const from = forward ? e.sources : e.sinks, to = forward ? e.sinks : e.sources;
+      if(!from.includes(k)) continue;
+      const h = (how==="possible"||e.dynamic||e.opaque) ? "possible" : "confirmed";
+      if(e.pipeline && PIDX[e.pipeline]) pipes.set(e.pipeline, pipes.has(e.pipeline)?better(pipes.get(e.pipeline),h):h);
+      for(const t of to){
+        if(t===k || startKeys.includes(t)) continue;
+        const prev = state.get(t);
+        const next = prev ? better(prev,h) : h;
+        if(prev!==next){ state.set(t,next); queue.push([t,next]); }
+      }
+    }
+  }
+  return {objects: state, pipelines: pipes};
+}
+function impactOf(sel){
+  let start = [], label = "", kind = "object";
+  if(sel && sel.startsWith("pipeline:")){
+    const p = PIDX[sel.slice(9)]; if(!p) return null;
+    start = p.effectiveWrites; label = p.name; kind = "pipeline";
+  } else if(EIDX[sel]){ start = [sel]; label = EIDX[sel].label; }
+  else return null;
+  const down = walk(start, true), up = walk(start, false);
+  // Pipelines that read anything affected are affected too (the object changes under them).
+  const affected = new Map(down.pipelines);
+  const reached = new Map([...start.map(k=>[k,"confirmed"]), ...down.objects]);
+  for(const [k,how] of reached){
+    for(const u of (EIDX[k]?.usage||[])){
+      if(!u.pipeline || (kind==="pipeline" && u.pipeline===label)) continue;
+      const h = (how==="possible"||u.dynamic||u.opaque) ? "possible" : "confirmed";
+      affected.set(u.pipeline, affected.get(u.pipeline)==="confirmed" ? "confirmed" : h);
+    }
+  }
+  if(kind==="pipeline") affected.delete(label);
+  const triggers = new Map();
+  for(const [pl,how] of affected){
+    const p = PIDX[pl]; if(!p) continue;
+    for(const t of p.startedBy||[]) triggers.set(t, triggers.get(t)==="confirmed" ? "confirmed" : how);
+    for(const o of p.orchestratedBy||[]) if(!affected.has(o)) affected.set(o, how);
+  }
+  return {label, kind, start, down: down.objects, up: up.objects, affected, triggers};
+}
+const howBadge = h => h==="confirmed" ? '<span class="badge b-ok">confirmed</span>' : '<span class="badge b-warn">possible</span>';
+function rImpact(){
+  const options = [
+    ...DATA.entities.filter(e=>PHYSICAL.has(e.kind)||e.kind==="stored_procedure").sort((a,b)=>a.label.localeCompare(b.label))
+      .map(e=>[e.key, `${e.label}${entWhere(e)?"  ·  "+entWhere(e):""}`]),
+    ...DATA.pipelines.map(p=>["pipeline:"+p.name, "Pipeline: "+p.name])];
+  if(!IMPACT && options.length) IMPACT = options[0][0];
+  const r = impactOf(IMPACT);
+  const list = (m, fn) => m.size ? `<ul class="plain">${[...m].sort((a,b)=>(a[1]>b[1])-(a[1]<b[1])).map(([k,h])=>`<li>${howBadge(h)} ${fn(k)}</li>`).join("")}</ul>` : '<p class="mut">None in this input.</p>';
+  const opaqueHere = r ? [...r.affected.keys()].filter(pl=>PIDX[pl] && (PIDX[pl].opaqueCount||0)>0) : [];
+  return `<h1>Impact: what changes if this changes</h1>
+  <p class="sub">Choose a table, file or pipeline. <b>Confirmed</b> means a static data movement in the definitions leads there. <b>Possible</b> means the path passes through a runtime-resolved target or code ADF cannot see (notebook, procedure, web call), so it may or may not be affected. Nothing outside the supplied input is shown.</p>
+  <label class="field"><span>Object or pipeline</span>
+  <select id="impact-sel" onchange="IMPACT=this.value;switchTab('impact')">${options.map(([k,l])=>`<option value="${esc(k)}"${k===IMPACT?" selected":""}>${esc(l)}</option>`).join("")}</select></label>
+  ${!r?'<div class="empty">Nothing to show.</div>':`
+  <div class="impact-grid">
+    <div class="card"><div class="eyebrow">Depends on (upstream)</div>${list(r.up, entLink)}</div>
+    <div class="card focus"><div class="eyebrow">${r.kind==="pipeline"?"Pipeline":"Selected object"}</div><h2 style="margin:.2rem 0">${esc(r.label)}</h2>
+      ${r.kind==="pipeline"?`<p class="mut">Starts from what it writes: ${r.start.map(entLink).join(", ")||"nothing"}</p>`:
+        `<p>${go("obj", IMPACT, "Open object detail")}</p>`}</div>
+    <div class="card"><div class="eyebrow">Feeds (downstream)</div>${list(r.down, entLink)}</div>
+  </div>
+  <div class="impact-grid two">
+    <div class="card"><div class="eyebrow">Affected pipelines</div>${list(r.affected, pipeLink)}</div>
+    <div class="card"><div class="eyebrow">Triggers that start them</div>${list(r.triggers, t=>TRIDX[t]?go("trg",t,esc(t)):esc(t))}</div>
+  </div>
+  ${opaqueHere.length?`<div class="card note"><b>Look inside the code too.</b> ${opaqueHere.map(pipeLink).join(", ")} ${opaqueHere.length>1?"run":"runs"} notebooks, procedures or external calls whose own reads and writes are not visible here.</div>`:""}`}`;
+}
+
+/* ============================================================ review issues */
+let ISSUE_FILTER = "all";
+const PRIO = {high:"b-bad", medium:"b-warn", low:"b-info"};
+function resourceLink(name){
+  if(!name) return "";
+  if(name.includes("::")){ const [pl, act] = name.split("::"); return `${pipeLink(pl)} <span class="mut">:: ${esc(act)}</span>`; }
+  if(PIDX[name]) return pipeLink(name);
+  if(DSIDX[name]) return dsLink(name);
+  if(LSIDX[name]) return lsLink(name);
+  if(DFIDX[name]) return dfLink(name);
+  if(TRIDX[name]) return go("trg", name, esc(name));
+  const e = DATA.entities.find(x=>x.label===name); if(e) return entLink(e.key);
+  return `<span class="ref">${esc(name)}</span>`;
+}
+function rIssues(){
+  const all = DATA.issues||[];
+  const shown = all.filter(i=>ISSUE_FILTER==="all"||i.priority===ISSUE_FILTER);
+  const counts = p => all.filter(i=>i.priority===p).length;
+  return `<h1>Review issues: what to investigate first</h1>
+  <p class="sub">Findings ranked by how much they affect trust in the factory or this document, each with why it matters and a next step. Limits of static analysis (runtime targets, opaque code, retries) are under <b>All findings and notes</b>.</p>
+  <div class="filter-row">${["all","high","medium","low"].map(p=>`<button class="chip ${ISSUE_FILTER===p?"on":""}" data-go="issuefilter" data-arg="${p}">${p} (${p==="all"?all.length:counts(p)})</button>`).join("")}
+    <span style="flex:1"></span>${csvBtn("issues","issues")}</div>
+  ${missing.length?`<div class="card note"><b>${missing.length} referenced object(s) were not supplied.</b> Export them to complete this document: ${missing.slice(0,6).map(r=>`<span class="ref">${esc(r.kind)} ${esc(r.name)}</span>`).join(" ")}${missing.length>6?" …":""}</div>`:""}
+  ${shown.length?shown.map(i=>`<div class="card issue">
+    <div class="issue-head"><span class="badge ${PRIO[i.priority]}">${esc(i.priority)}</span> <b>${esc(i.category)}</b> ${i.resource?"· "+resourceLink(i.resource):""}</div>
+    <p style="margin:.35rem 0">${esc(i.message)}</p>
+    ${i.why?`<p class="mut"><b>Why it matters:</b> ${esc(i.why)}</p>`:""}
+    <p class="mut"><b>Next step:</b> ${esc(i.action)}</p></div>`).join("")
+    :`<div class="empty"><b>Nothing to review at this priority.</b></div>`}`;
+}
+
+/* ============================================================ factory details */
+const DETAIL_FIELDS = {environment:"Environment (e.g. Production)", owner:"Owner or team",
+  factory:"Factory resource (subscription / resource group / name)",
+  sourceLocation:"Source location (Git repository and branch, or export path)",
+  runbook:"Runbook or support page", folder:"Home page group (e.g. Finance / Daily)", notes:"Notes"};
+const SECRETISH = /(password|pwd|secret|accountkey|sharedaccess|token|apikey)\s*=|[?&](sig|token|code|key|apikey)=|bearer\s+\S{8,}|:\/\/[^\/\s@]+@/i;
+function readDetails(){ try{ return JSON.parse(document.getElementById("adf-documentation-details")?.textContent||"{}")||{}; }catch(e){ return {}; } }
+let DETAILS = Object.assign(Object.fromEntries(Object.keys(DETAIL_FIELDS).map(k=>[k,""])), readDetails());
+let SAVED_DETAILS = JSON.stringify(DETAILS);
+function captureDetails(){
+  for(const k of Object.keys(DETAIL_FIELDS)){ const el = document.getElementById("det-"+k); if(el) DETAILS[k] = el.value; }
+  const bad = Object.entries(DETAILS).filter(([,v])=>SECRETISH.test(v)).map(([k])=>DETAIL_FIELDS[k]);
+  const n = Object.keys(DETAIL_FIELDS).filter(k=>DETAILS[k]!==JSON.parse(SAVED_DETAILS)[k]).length;
+  const bar = document.getElementById("det-savebar"), st = document.getElementById("det-status"), btn = document.getElementById("det-save");
+  if(!bar) return;
+  bar.classList.toggle("dirty", n>0);
+  btn.disabled = bad.length>0;
+  st.textContent = bad.length ? `Remove what looks like a secret from: ${bad.join(", ")}. Record where the secret lives instead.`
+    : n ? `${n} unsaved ${n===1?"change":"changes"}. Download the updated HTML and replace the original file to keep them.`
+        : "No unsaved changes. Details are kept when this document is regenerated over the same file.";
+}
+function saveDetailsHtml(){
+  captureDetails();
+  if(document.getElementById("det-save").disabled) return;
+  const clone = document.documentElement.cloneNode(true);
+  clone.querySelector("#adf-documentation-details").textContent =
+    JSON.stringify(DETAILS).replace(/</g,"\\u003c").replace(/>/g,"\\u003e").replace(/&/g,"\\u0026");
+  clone.querySelector("#main").innerHTML = ""; clone.querySelector("#nav").innerHTML = "";
+  const blob = new Blob(["<!DOCTYPE html>\n"+clone.outerHTML], {type:"text/html;charset=utf-8"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = DATA.documentationFilename || "factory.html"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  SAVED_DETAILS = JSON.stringify(DETAILS); captureDetails();
+  document.getElementById("det-status").textContent = "Downloaded. Replace the original HTML with the downloaded file to keep these details.";
+}
+function rDetails(){
+  const c = DATA.coverage||{};
+  const field = k => k==="notes"
+    ? `<label class="field wide"><span>${esc(DETAIL_FIELDS[k])}</span><textarea id="det-${k}" rows="4" oninput="captureDetails()">${esc(DETAILS[k])}</textarea></label>`
+    : `<label class="field"><span>${esc(DETAIL_FIELDS[k])}</span><input id="det-${k}" value="${esc(DETAILS[k])}" oninput="captureDetails()"></label>`;
+  return `<h1>Factory details</h1>
+  <p class="sub">Who owns this factory, where its source lives and how to support it. These details are kept in this file, survive regeneration over the same file, and are shown on the documentation home. Record references only: never passwords, keys or tokens.</p>
+  <div class="card details-grid">${Object.keys(DETAIL_FIELDS).map(field).join("")}</div>
+  <div id="det-savebar" class="savebar"><p id="det-status" role="status"></p><button class="primary-btn" id="det-save" onclick="saveDetailsHtml()">Download updated HTML</button></div>
+  <h2>How this document was generated</h2>
+  <div class="card kvl">
+    <div class="k">Generated</div><div>${esc(DATA.generated)} by ${esc(DATA.generator)} (payload version ${esc(DATA.schemaVersion)})</div>
+    <div class="k">Input</div><div>${esc((c.inputFormats||[]).join(", ")||"unknown")} · ${esc(c.jsonFiles)} JSON file(s)${c.skippedFiles?` · ${esc(c.skippedFiles)} unreadable`:""}</div>
+    <div class="k">Mode</div><div>${esc(MODE)}</div>
+    <div class="k">Secrets withheld</div><div>${esc(DATA.redactions||0)}</div>
+    <div class="k">Run history</div><div class="mut">Not available: this document is generated from definitions, not from runs.</div>
+  </div>
+  <h2>Where each definition came from</h2>
+  <div class="table-wrap"><table class="t"><thead><tr><th>Kind</th><th>Name</th><th>Source file</th></tr></thead><tbody>
+  ${[["pipeline",DATA.pipelines,pipeLink],["data flow",DATA.dataflows,dfLink],["dataset",DATA.datasets,dsLink],["linked service",DATA.linkedServices,lsLink],["trigger",DATA.triggers,n=>go("trg",n,esc(n))]]
+    .flatMap(([k,list,link])=>list.map(x=>`<tr><td class="mut">${k}</td><td>${link(x.name)}</td><td class="mut">${esc(x.source||"—")}</td></tr>`)).join("")}
+  </tbody></table></div>`;
 }
 
 /* ============================================================ boot */
 const RENDER = {overview:rOverview, orchestration:rOrchestration, lineage:rLineage,
   pipelines:rPipelines, dataflows:rDataflows, datasets:rDatasets, linked:rLinked,
-  triggers:rTriggers, warnings:rWarnings, entities:rEntities};
+  triggers:rTriggers, warnings:rWarnings, objects:rObjects, impact:rImpact,
+  issues:rIssues, details:rDetails};
 buildNav();
 switchTab("overview");
+const _render = RENDER.details;
+RENDER.details = () => { const h = _render(); requestAnimationFrame(captureDetails); return h; };
 </script>
 </body>
 </html>

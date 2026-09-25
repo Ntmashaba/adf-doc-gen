@@ -345,7 +345,8 @@ def describe_linked_service(name: str, props: dict) -> dict:
     conn = conn if isinstance(conn, str) else ""
     m = CONN_SERVER.search(conn)
     if m:
-        out["server"] = m.group(1).strip()
+        # "tcp:host,1433" is how SQL connection strings spell a host and port.
+        out["server"] = re.sub(r",\d+$", "", re.sub(r"(?i)^tcp:", "", m.group(1).strip()))
     m = CONN_DB.search(conn)
     if m:
         out["database"] = m.group(1).strip()
@@ -652,6 +653,46 @@ def describe_trigger(name: str, props: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Review issues: priority, explanation and next action per warning category
+# ---------------------------------------------------------------------------
+SCHEMA_VERSION = 2
+
+ISSUE_GUIDE = {
+    # category: (priority, why it matters, what to do next)
+    "credential hygiene": ("high", "A credential is stored in the factory definition, so anyone who can read "
+                           "the definition or its Git history can read it.",
+                           "Move the secret to Key Vault or use a managed identity, then rotate it."),
+    "input": ("high", "Part of the input could not be used, so this document may be missing objects.",
+              "Fix or re-export the file and regenerate."),
+    "unresolved reference": ("high", "An object is used but was not supplied, so its reads, writes or "
+                             "target are unknown.",
+                             "Export the missing object (or the whole factory) and regenerate."),
+    "cycle": ("high", "Activities that depend on each other in a loop can never all run.",
+              "Break the dependency loop in the pipeline."),
+    "trigger state": ("medium", "The trigger is saved as not started, so its pipelines do not run on it.",
+                      "Confirm this is intended; start the trigger or remove it."),
+    "inactive activity": ("medium", "The activity is skipped at runtime.",
+                          "Confirm it is meant to be off; remove it if it is no longer needed."),
+    "data flow": ("medium", "Data-flow output that nothing consumes is dead logic or a missing connection.",
+                  "Connect the branch to a sink or remove it."),
+    "unreferenced resource": ("low", "Nothing in the supplied input uses this object. Other factories, "
+                              "external callers or objects not supplied may still use it.",
+                              "Review as a removal candidate; check other factories and callers first."),
+    "no known invoker": ("low", "No trigger or pipeline here starts this pipeline.",
+                         "Find the external caller (REST, Logic Apps, Synapse) or review it for removal."),
+}
+NOTE_GUIDE = {
+    "dynamic target": "The table or path is built from parameters or expressions, so the object "
+                      "shown is only what can be known before the run.",
+    "opaque": "The work happens in code ADF cannot see (notebook, procedure, external call); "
+              "inspect that code for what it reads and writes.",
+    "resilience": "Copy and transform activities without retries fail on the first transient error.",
+    "error path": "These activities run on failure or completion, not only on success.",
+    "isolated entity": "Read or checked but not part of any data movement.",
+}
+
+
+# ---------------------------------------------------------------------------
 # The analyzer
 # ---------------------------------------------------------------------------
 
@@ -684,8 +725,16 @@ class Analyzer:
         self._incomplete: List[str] = []
         self._no_retry: List[str] = []
 
-    def warn(self, severity: str, category: str, message: str) -> None:
-        self.warnings.append({"severity": severity, "category": category, "message": message})
+    def warn(self, severity: str, category: str, message: str,
+             resource: Optional[str] = None) -> None:
+        if resource is None:    # the first quoted name in the message
+            m = re.search(r"'([^']+)'", message)
+            resource = m.group(1) if m else ""
+        self.warnings.append({"severity": severity, "category": category,
+                              "message": message, "resource": resource})
+
+    def warn_at(self, loc: str, severity: str, category: str, message: str) -> None:
+        self.warn(severity, category, message, resource=loc)
 
     # ---- entity registry ------------------------------------------------
 
@@ -1552,34 +1601,34 @@ class Analyzer:
             for a in p["activities"]:
                 loc = f"{p['name']}::{a['activity']}"
                 if a.get("dynamic"):
-                    self.warn("info", "dynamic target",
+                    self.warn_at(loc, "info", "dynamic target",
                               f"{loc} builds its target dynamically — the actual "
                               f"table/path is only known at runtime.")
                 if a.get("opaque"):
-                    self.warn("info", "opaque",
+                    self.warn_at(loc, "info", "opaque",
                               f"{loc} delegates to external code ({a['type']}) — "
                               f"ADF cannot see what it reads or writes.")
                 if a.get("inactive"):
-                    self.warn("warning", "inactive activity",
+                    self.warn_at(loc, "warning", "inactive activity",
                               f"{loc} is set Inactive — it is skipped at runtime.")
                 for dep in a["dependsOn"]:
                     conds = set((dep["on"] or "").split(","))
                     if conds & {"Failed", "Skipped"}:
-                        self.warn("info", "error path",
+                        self.warn_at(loc, "info", "error path",
                                   f"{loc} runs on '{dep['on']}' of {dep['activity']} — "
                                   f"error-handling path, not the happy path.")
                     elif "Completed" in conds:
-                        self.warn("info", "error path",
+                        self.warn_at(loc, "info", "error path",
                                   f"{loc} runs on 'Completed' of {dep['activity']} — "
                                   f"it executes whether {dep['activity']} succeeds or fails.")
                 if a["step"] == 0:
-                    self.warn("warning", "cycle",
+                    self.warn_at(loc, "warning", "cycle",
                               f"{loc} is in a dependency cycle.")
                 if a["category"] in ("movement", "transform") and not a.get("retry"):
                     self._no_retry.append(loc)
 
         if self._no_retry:
-            self.warn("info", "resilience",
+            self.warn("info", "resilience", resource="", message=
                       f"{len(self._no_retry)} data/transform activities have no retry "
                       f"policy: " + ", ".join(self._no_retry[:10])
                       + (" …" if len(self._no_retry) > 10 else ""))
@@ -1629,7 +1678,8 @@ class Analyzer:
                     and not self.downstream.get(key):
                 self.warn("info", "isolated entity",
                           f"{ent['label']} is touched but participates in no data "
-                          f"movement (read-only reference or metadata-only use).")
+                          f"movement (read-only reference or metadata-only use).",
+                          resource=ent["label"])
 
         for fname, meta in obj(self.store.get("__skipped__")).items():
             self.warn("warning", "input",
@@ -1653,6 +1703,14 @@ class Analyzer:
         self.warnings = deduped
 
     # ---- serialise ------------------------------------------------------
+
+    def as_count(self, what: str) -> int:
+        return {"pipelines": len(self.pipelines),
+                "activities": sum(p["activityCount"] for p in self.pipelines),
+                "dataflows": len(self.store["dataflow"]),
+                "datasets": len(self.store["dataset"]),
+                "linkedServices": len(self.store["linkedservice"]),
+                "triggers": len(self.store["trigger"])}[what]
 
     def as_dict(self) -> dict:
         ents = []
@@ -1696,6 +1754,81 @@ class Analyzer:
                                    "to": df, "toKind": "dataflow",
                                    "detail": "ExecuteDataFlow"})
 
+        origins = obj(self.store.get("__origins__"))
+        src = lambda kind, name: obj(origins.get(kind)).get(name)
+        for p in self.pipelines:
+            p["source"] = src("pipeline", p["name"])
+        for d in self.dataflows:
+            d["source"] = src("dataflow", d["name"])
+        for t in self.triggers:
+            t["source"] = src("trigger", t["name"])
+        for d in datasets:
+            d["source"] = src("dataset", d["name"])
+        for l in linked_services:
+            l["source"] = src("linkedservice", l["name"])
+
+        # Who ultimately starts each pipeline: triggers through any chain of parents.
+        parents = defaultdict(set)
+        for c in self.pipeline_calls:
+            parents[c["child"]].add(c["parent"])
+        by_name = {p["name"]: p for p in self.pipelines}
+
+        def ancestry(name):
+            seen, stack = set(), [name]
+            while stack:
+                for par in parents.get(stack.pop(), ()):
+                    if par not in seen:
+                        seen.add(par)
+                        stack.append(par)
+            return seen
+        for p in self.pipelines:
+            anc = ancestry(p["name"])
+            p["orchestratedBy"] = sorted(anc)
+            p["startedBy"] = sorted({t for q in anc | {p["name"]}
+                                     for t in (by_name.get(q) or {}).get("triggers", [])})
+
+        # Reverse usage: every activity that reads, writes, deletes or runs an object.
+        usage = defaultdict(list)
+        for p in self.pipelines:
+            for a in p["activities"]:
+                for key, op in [(k, "read") for k in a["reads"]] + [(k, "write") for k in a["writes"]]:
+                    kind = self.entities.get(key, {}).get("kind")
+                    if a["type"] == "Delete" and op == "write":
+                        op = "delete"
+                    elif kind in ("stored_procedure", "notebook", "code_artifact"):
+                        op = "execute"
+                    elif kind == "endpoint":
+                        op = "call"
+                    usage[key].append({"pipeline": p["name"], "activity": a["activity"],
+                                       "type": a["type"], "operation": op,
+                                       "dynamic": bool(a.get("dynamic")),
+                                       "opaque": bool(a.get("opaque"))})
+        for d in self.dataflows:
+            for key in d["sourceKeys"] + d["sinkKeys"]:
+                if not usage.get(key):
+                    usage[key].append({"pipeline": "", "activity": "", "type": "data flow",
+                                       "operation": "read" if key in d["sourceKeys"] else "write",
+                                       "dataflow": d["name"], "dynamic": False, "opaque": False})
+        for e in ents:
+            e["usage"] = usage.get(e["key"], [])
+            pls = sorted({u["pipeline"] for u in e["usage"] if u["pipeline"]})
+            e["pipelines"] = pls
+            e["triggers"] = sorted({t for pl in pls for t in (by_name.get(pl) or {}).get("startedBy", [])})
+            e["linkedServices"] = sorted({self.ds_info[a]["linkedService"] for a in e["aliases"]
+                                          if a in self.ds_info and self.ds_info[a]["linkedService"]}
+                                         | ({self.entities[e["key"]]["scope"]}
+                                            if self.entities[e["key"]].get("scope") else set()))
+
+        # Review issues: warnings with a priority, explanation and next action.
+        issues = []
+        for w in self.warnings:
+            if w["severity"] == "info" and w["category"] not in ISSUE_GUIDE:
+                continue
+            prio, why, action = ISSUE_GUIDE.get(w["category"], ("medium", "", "Review."))
+            issues.append({**w, "priority": prio, "why": why, "action": action})
+        rank = {"high": 0, "medium": 1, "low": 2}
+        issues.sort(key=lambda i: (rank[i["priority"]], i["category"], i["resource"]))
+
         n_missing = sum(1 for r in self.resolution if r["status"] == "MISSING")
         inp = obj(self.store.get("__input__"))
         skipped = len(obj(self.store.get("__skipped__")))
@@ -1727,9 +1860,35 @@ class Analyzer:
         else:
             mode = "selection"
 
+        # A small, stable summary for the documentation home and cross-tool joins.
+        systems = defaultdict(lambda: {"objects": set(), "read": 0, "written": 0})
+        for e in ents:
+            if e["kind"] not in ("table", "file_path", "stored_procedure", "inline_dataset", "dataset"):
+                continue
+            ep = e["endpoint"]
+            sk = (ep.get("system") or "", ep.get("server") or ep.get("url") or "",
+                  ep.get("database") or ep.get("container") or "")
+            systems[sk]["objects"].add(e["label"])
+            ops = {u["operation"] for u in e["usage"]}
+            systems[sk]["read"] += "read" in ops
+            systems[sk]["written"] += bool(ops & {"write", "delete"})
+        summary = {
+            "counts": {k: self.as_count(k) for k in ("pipelines", "activities", "dataflows",
+                                                     "datasets", "linkedServices", "triggers")},
+            "sources": [{"system": k[0], "server": k[1], "database": k[2],
+                         "objects": sorted(v["objects"])[:200],
+                         "read": v["read"], "written": v["written"]}
+                        for k, v in sorted(systems.items())],
+            "issues": {p: sum(1 for i in issues if i["priority"] == p) for p in ("high", "medium", "low")},
+            "unresolved": n_missing,
+        }
+
         return {
+            "schemaVersion": SCHEMA_VERSION,
             "mode": mode,
             "coverage": coverage,
+            "summary": summary,
+            "issues": issues,
             "factory": {
                 "pipelineCount": len(self.pipelines),
                 "datasetCount": len(self.store["dataset"]),

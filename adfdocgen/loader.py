@@ -128,15 +128,18 @@ def collect_inputs(input_path: str) -> Dict[str, Dict[str, dict]]:
     param_values: Dict[str, Any] = {}
     used_params: set = set()
     seen_at: Dict[Tuple[str, str], str] = {}
+    origins: Dict[str, Dict[str, str]] = defaultdict(dict)
 
-    def put(kind: str, name: str, props: dict, fname: str) -> None:
+    def put(kind: str, name: str, props: dict, fname: str, where: str = "") -> None:
         key = (kind, name.lower())
         if key in seen_at and kind != "unknown":
             duplicates.append({"kind": kind, "name": name, "files": [seen_at[key], fname]})
         seen_at[key] = fname
         store[kind][name] = props
+        # Provenance: which file (and where in it) a definition came from.
+        origins[kind][name] = fname + (f" › {where}" if where else "")
 
-    def ingest_arm(res: dict, fname: str) -> None:
+    def ingest_arm(res: dict, fname: str, where: str = "") -> None:
         rtype = (res.get("type") or "").lower()
         raw = res.get("name", "")
         # ARM names arrive as "[concat(parameters('factoryName'), '/PL_x')]"
@@ -149,9 +152,9 @@ def collect_inputs(input_path: str) -> Dict[str, Dict[str, dict]]:
         props = _substitute(props, param_values, used_params)
         for suffix, kind in ARM_TYPES:
             if rtype.endswith(suffix):
-                put(kind, name, props, fname)
-        for sub in res.get("resources", []) or []:
-            ingest_arm(sub, fname)
+                put(kind, name, props, fname, where)
+        for i, sub in enumerate(res.get("resources", []) or []):
+            ingest_arm(sub, fname, f"{where}.resources[{i}]")
 
     def ingest_doc(doc: Any, fname: str, folder_hint: str = "") -> None:
         if _is_arm_parameters(doc):
@@ -162,8 +165,8 @@ def collect_inputs(input_path: str) -> Dict[str, Dict[str, dict]]:
             for pname, spec in (doc.get("parameters") or {}).items():
                 if isinstance(spec, dict) and "defaultValue" in spec:
                     param_values.setdefault(pname, spec["defaultValue"])
-            for res in doc.get("resources", []) or []:
-                ingest_arm(res, fname)
+            for i, res in enumerate(doc.get("resources", []) or []):
+                ingest_arm(res, fname, f"resources[{i}]")
             return
         if isinstance(doc, dict):
             kind, name, props = classify_resource(
@@ -203,6 +206,7 @@ def collect_inputs(input_path: str) -> Dict[str, Dict[str, dict]]:
     for kind in KINDS + SUPPORT_KINDS + ("unknown",):
         store.setdefault(kind, {})
     store["__skipped__"] = {f: {"error": e} for f, e in skipped}
+    store["__origins__"] = dict(origins)
     store["__input__"] = {
         "path": os.path.basename(os.path.normpath(input_path)),
         "formats": sorted(formats),
