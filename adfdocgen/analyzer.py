@@ -176,14 +176,14 @@ def physical_key(kind: str, label: str, endpoint: Optional[dict], scope: str = "
     ep = endpoint or {}
     host = _norm_host(ep.get("server") or ep.get("url"))
     where = host or (f"ls:{scope.lower()}" if scope else "")
-    if kind == "table":
+    if kind in ("table", "stored_procedure"):
         name = canon_table(label)
         parts = name.split(".")
         db = (ep.get("database") or "").lower()
         if len(parts) == 3:
             db, name = parts[0], ".".join(parts[1:])
         loc = "/".join(x for x in (where, db) if x)
-        return f"table:{loc}/{name}" if loc else f"table:{name}"
+        return f"{kind}:{loc}/{name}" if loc else f"{kind}:{name}"
     if kind == "file_path":
         container = ep.get("container") or ""
         path = "/".join(x for x in (container, ep.get("path") or "") if x) or label
@@ -245,6 +245,17 @@ LS_SYSTEM = {
 NON_SQL_SOURCE = ("cosmos", "mongo", "rest", "http", "odata", "dynamics", "salesforce",
                   "dataexplorer", "search", "json", "delimited", "parquet", "binary",
                   "avro", "orc", "xml", "excel", "sharepoint", "office365", "commondataservice")
+
+
+_DYNAMIC_OBJECT = re.compile(
+    r"\b(?:FROM|JOIN|INTO|UPDATE|TABLE|MERGE|USING|EXEC(?:UTE)?|CALL)\s+[\w.\[\]\"`]*@", re.I)
+
+
+def sql_names_dynamic(sql: Any) -> bool:
+    """True when an ADF expression builds a table or procedure name in the SQL,
+    not merely a filter value (WHERE d > '@{...}')."""
+    text = as_text(sql)
+    return bool(_DYNAMIC_OBJECT.search(text)) or text.lstrip().startswith("@")
 
 
 def is_sql_source(source_type: Any) -> bool:
@@ -784,6 +795,19 @@ class Analyzer:
             if info["linkedService"]:
                 self.track_ref("linked_service", info["linkedService"], f"dataset {ds_name}")
 
+        def ls_refs(node):
+            if isinstance(node, dict):
+                if node.get("type") == "LinkedServiceReference" and node.get("referenceName"):
+                    yield node["referenceName"]
+                for v in node.values():
+                    yield from ls_refs(v)
+            elif isinstance(node, list):
+                for v in node:
+                    yield from ls_refs(v)
+        for ls_name, props in self.store["linkedservice"].items():
+            for other in ls_refs(obj(props.get("typeProperties"))):
+                self.track_ref("linked_service", other, f"linked service {ls_name}")
+
         for name, props in sorted(self.store["pipeline"].items()):
             self.pipelines.append(self.walk_pipeline(name, props))
         for name in sorted(self.store["dataflow"]):
@@ -978,7 +1002,7 @@ class Analyzer:
             n_map = len(lst(tr.get("mappings")))
             if n_map:
                 bits.append(f"explicit column mapping ({n_map} cols)")
-            dyn = is_dynamic(query) or is_dynamic(pre)
+            dyn = sql_names_dynamic(query) or sql_names_dynamic(pre)
             self.edge(reads, writes, "Copy", pipeline, name,
                       squeeze(query or proc, 200), dynamic=dyn)
 
@@ -1052,7 +1076,7 @@ class Analyzer:
                 all_r += r_k
                 all_w += w_k
                 texts.append(f"-- [{s.get('type','Query')}]\n{text}")
-                dyn = dyn or is_dynamic(text)
+                dyn = dyn or sql_names_dynamic(text)
             reads += all_r
             writes += all_w
             bits.append(f"{len(texts)} script block(s)")
@@ -1093,7 +1117,9 @@ class Analyzer:
                 ds = obj(obj(sink).get("dataset")).get("referenceName", "")
                 if ds:
                     activity_sinks.append(self.dataset_node(ds, "dataflow sink", ref))
-            doc = self.document_dataflow(df, ref, pipeline, name, activity_sinks)
+            doc = self.document_dataflow(df, ref, pipeline, name, activity_sinks,
+                                         obj(df_ref.get("datasetParameters"))
+                                         if isinstance(df_ref, dict) else None)
             writes += activity_sinks
             if doc:
                 reads += doc["sourceKeys"]
@@ -1170,7 +1196,8 @@ class Analyzer:
 
     # ---- data flows -----------------------------------------------------
 
-    def _df_endpoints(self, tp: dict, ref: str) -> Dict[str, Dict[str, dict]]:
+    def _df_endpoints(self, tp: dict, ref: str,
+                      stream_params: Optional[dict] = None) -> Dict[str, Dict[str, dict]]:
         eps: Dict[str, Dict[str, dict]] = {"source": {}, "sink": {}}
         for key, bucket in (("sources", "source"), ("sinks", "sink")):
             role = f"dataflow {bucket}"
@@ -1181,7 +1208,11 @@ class Analyzer:
                 fl = obj(item.get("flowlet")).get("referenceName", "")
                 node_key, label = "", nm
                 if ds:
-                    node_key = self.dataset_node(ds, role, ref)
+                    # Parameters set on the flow's source/sink, overridden by the
+                    # values the calling activity passes for that stream.
+                    params = {**obj(obj(item.get("dataset")).get("parameters")),
+                              **obj(obj(stream_params).get(nm))}
+                    node_key = self.dataset_node(ds, role, ref, params or None)
                     label = self.entities.get(node_key, {}).get("label", ds)
                 elif ls:
                     self.track_ref("linked_service", ls, ref)
@@ -1196,7 +1227,8 @@ class Analyzer:
 
     def document_dataflow(self, df_name: str, ref: str,
                           pipeline: str = "", activity: str = "",
-                          activity_sinks: Optional[List[str]] = None) -> Optional[dict]:
+                          activity_sinks: Optional[List[str]] = None,
+                          stream_params: Optional[dict] = None) -> Optional[dict]:
         if not df_name:
             return None
         df_name = self.named("dataflow", df_name)
@@ -1210,7 +1242,7 @@ class Analyzer:
         self._df_done.add(df_name)
 
         tp = obj(props.get("typeProperties"))
-        eps = self._df_endpoints(tp, ref)
+        eps = self._df_endpoints(tp, ref, stream_params)
         wrangling = props.get("type") == "WranglingDataFlow"
         # Without a data flow script (Power Query flows, older flows that list
         # their transformations), internal lineage is unknown: every source may

@@ -1,0 +1,21 @@
+{
+  "name": "PL_Rerun_Enrichment",
+  "properties": {
+    "description": "Ad-hoc rerun of the enrichment data flow.",
+    "folder": {
+      "name": "Transform"
+    },
+    "activities": [
+      {
+        "name": "Rerun enrich",
+        "type": "ExecuteDataFlow",
+        "typeProperties": {
+          "dataflow": {
+            "referenceName": "DF_EnrichOrders",
+            "type": "DataFlowReference"
+          }
+        }
+      }
+    ]
+  }
+}

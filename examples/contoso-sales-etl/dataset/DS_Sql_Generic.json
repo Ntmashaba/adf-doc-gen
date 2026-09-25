@@ -1,0 +1,29 @@
+{
+  "name": "DS_Sql_Generic",
+  "properties": {
+    "type": "AzureSqlTable",
+    "linkedServiceName": {
+      "referenceName": "LS_SalesDW",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "schema": {
+        "type": "string",
+        "defaultValue": "dbo"
+      },
+      "table": {
+        "type": "string"
+      }
+    },
+    "typeProperties": {
+      "schema": {
+        "value": "@dataset().schema",
+        "type": "Expression"
+      },
+      "table": {
+        "value": "@dataset().table",
+        "type": "Expression"
+      }
+    }
+  }
+}

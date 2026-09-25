@@ -1,0 +1,117 @@
+{
+  "name": "PL_Transform_Sales",
+  "properties": {
+    "description": "Enriches landed orders and archives the fact table.",
+    "folder": {
+      "name": "Transform"
+    },
+    "activities": [
+      {
+        "name": "Enrich orders",
+        "type": "ExecuteDataFlow",
+        "policy": {
+          "retry": 1
+        },
+        "typeProperties": {
+          "dataflow": {
+            "referenceName": "DF_EnrichOrders",
+            "type": "DataFlowReference"
+          }
+        }
+      },
+      {
+        "name": "Score in Databricks",
+        "type": "DatabricksNotebook",
+        "dependsOn": [
+          {
+            "activity": "Enrich orders",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "linkedServiceName": {
+          "referenceName": "LS_Databricks",
+          "type": "LinkedServiceReference"
+        },
+        "typeProperties": {
+          "notebookPath": "/Shared/sales/score_orders",
+          "baseParameters": {
+            "run_date": "@utcNow()"
+          }
+        }
+      },
+      {
+        "name": "Load fact",
+        "type": "SqlServerStoredProcedure",
+        "dependsOn": [
+          {
+            "activity": "Score in Databricks",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "linkedServiceName": {
+          "referenceName": "LS_SalesDW",
+          "type": "LinkedServiceReference"
+        },
+        "typeProperties": {
+          "storedProcedureName": "dw.usp_LoadFactSales"
+        }
+      },
+      {
+        "name": "Archive fact",
+        "type": "Copy",
+        "dependsOn": [
+          {
+            "activity": "Load fact",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "retry": 3
+        },
+        "inputs": [
+          {
+            "referenceName": "DS_SalesDW_FactSales",
+            "type": "DatasetReference"
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "DS_Archive_FactSales",
+            "type": "DatasetReference"
+          }
+        ],
+        "typeProperties": {
+          "source": {
+            "type": "AzureSqlSource"
+          },
+          "sink": {
+            "type": "AzureSqlSink",
+            "preCopyScript": "DELETE FROM dbo.FactSales WHERE sale_date >= DATEADD(day, -7, GETDATE())"
+          }
+        }
+      },
+      {
+        "name": "Refresh sales model",
+        "type": "PBISemanticModelRefresh",
+        "dependsOn": [
+          {
+            "activity": "Archive fact",
+            "dependencyConditions": [
+              "Completed"
+            ]
+          }
+        ],
+        "typeProperties": {
+          "workspaceId": "00000000-0000-0000-0000-000000000001",
+          "datasetId": "00000000-0000-0000-0000-000000000002"
+        }
+      }
+    ]
+  }
+}

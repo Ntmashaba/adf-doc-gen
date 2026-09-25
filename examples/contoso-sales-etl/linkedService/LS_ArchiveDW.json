@@ -1,0 +1,12 @@
+{
+  "name": "LS_ArchiveDW",
+  "properties": {
+    "type": "AzureSqlDatabase",
+    "typeProperties": {
+      "connectionString": {
+        "type": "SecureString",
+        "value": "Server=tcp:contoso-archive.database.windows.net,1433;Database=ArchiveDW;User ID=etl;Password=example-not-a-real-password;"
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "LS_KeyVault",
+  "properties": {
+    "type": "AzureKeyVault",
+    "typeProperties": {
+      "baseUrl": "https://contoso-kv.vault.azure.net/"
+    }
+  }
+}

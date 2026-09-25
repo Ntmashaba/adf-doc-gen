@@ -1,0 +1,34 @@
+{
+  "name": "TR_Daily_0600",
+  "properties": {
+    "type": "ScheduleTrigger",
+    "runtimeState": "Started",
+    "pipelines": [
+      {
+        "pipelineReference": {
+          "referenceName": "PL_Master_Daily",
+          "type": "PipelineReference"
+        },
+        "parameters": {
+          "target": "OrdersSync"
+        }
+      }
+    ],
+    "typeProperties": {
+      "recurrence": {
+        "frequency": "Day",
+        "interval": 1,
+        "startTime": "2026-01-01T06:00:00",
+        "timeZone": "South Africa Standard Time",
+        "schedule": {
+          "hours": [
+            6
+          ],
+          "minutes": [
+            0
+          ]
+        }
+      }
+    }
+  }
+}

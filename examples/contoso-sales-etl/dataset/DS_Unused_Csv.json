@@ -1,0 +1,17 @@
+{
+  "name": "DS_Unused_Csv",
+  "properties": {
+    "type": "DelimitedText",
+    "linkedServiceName": {
+      "referenceName": "LS_Lake",
+      "type": "LinkedServiceReference"
+    },
+    "typeProperties": {
+      "location": {
+        "type": "AzureBlobFSLocation",
+        "fileSystem": "old",
+        "fileName": "export.csv"
+      }
+    }
+  }
+}

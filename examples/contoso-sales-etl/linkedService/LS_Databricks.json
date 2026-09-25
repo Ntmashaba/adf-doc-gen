@@ -1,0 +1,10 @@
+{
+  "name": "LS_Databricks",
+  "properties": {
+    "type": "AzureDatabricks",
+    "typeProperties": {
+      "domain": "https://adb-123.azuredatabricks.net",
+      "existingClusterId": "0101-etl"
+    }
+  }
+}

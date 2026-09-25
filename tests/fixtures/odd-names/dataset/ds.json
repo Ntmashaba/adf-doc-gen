@@ -1,0 +1,1 @@
+{"name":"Customer's \"file\"","properties":{"type":"Parquet","linkedServiceName":{"referenceName":"Blob's \\ store"},"typeProperties":{"location":{"type":"AzureBlobFSLocation","fileSystem":"raw","folderPath":"Customer's\\archive/Überprüfung_VW_REP_SNOWFLAKE_WAREHOUSE_METERING_HISTORY_EXTREMELY_LONG_IDENTIFIER_WITHOUT_SPACES_AT_ALL"}}}}

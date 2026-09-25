@@ -71,6 +71,17 @@ def build_agent_md(payload: dict) -> str:
       f"{fac['unresolvedCount']} unresolved refs · {fac['warningCount']} warnings.")
     w("")
 
+    cov = payload.get("coverage") or {}
+    if cov:
+        w(f"Coverage: input {_join(cov.get('inputFormats', []))}; "
+          f"{cov.get('skippedFiles', 0)} unreadable file(s); "
+          f"{cov.get('unresolvedReferences', 0)} missing reference(s); "
+          f"{cov.get('opaqueActivities', 0)} of {cov.get('activities', 0)} activities opaque; "
+          f"{cov.get('dynamicActivities', 0)} resolved at runtime; "
+          f"{cov.get('unknownFootprints', 0)} with unknown footprint; "
+          f"{payload.get('redactions', 0)} secret value(s) withheld. Run history: not available.")
+        w("")
+
     missing = [r for r in payload["resolution"] if r["status"] == "MISSING"]
     if missing:
         w("## MISSING INPUTS (analysis incomplete — export these next)")

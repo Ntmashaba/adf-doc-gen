@@ -58,7 +58,7 @@ def main(argv=None) -> int:
     print(f"Reading {in_path} …")
     store = collect_inputs(str(in_path))
     counts = {k: len(v) for k, v in store.items()
-              if k not in ("__skipped__", "unknown") and v}
+              if not k.startswith("__") and k != "unknown" and v}
     if store.get("unknown"):
         print(f"  ? {len(store['unknown'])} file(s) could not be classified: "
               + ", ".join(sorted(store["unknown"])), file=sys.stderr)

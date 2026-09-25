@@ -1,0 +1,1 @@
+{"name":"Blob's \\ store","properties":{"type":"AzureBlobFS","typeProperties":{"url":"https://acct.dfs.core.windows.net"}}}

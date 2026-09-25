@@ -291,6 +291,20 @@ def build_docx_body(payload: dict) -> str:
     parts.append(para(run("What this document can claim.  ", bold=True)
                       + run(_MODE_NOTES[mode]), shade=GREY_HDR, space_after=240))
 
+    cov = payload.get("coverage") or {}
+    if cov:
+        parts.append(heading("What this document can and cannot see", 1))
+        parts.append(table(["Check", "Result"], [
+            ["Input", _join(cov.get("inputFormats", []))],
+            ["Unreadable files", cov.get("skippedFiles", 0)],
+            ["Missing references", cov.get("unresolvedReferences", 0)],
+            ["Opaque activities", f"{cov.get('opaqueActivities', 0)} of {cov.get('activities', 0)}"],
+            ["Resolved at runtime", cov.get("dynamicActivities", 0)],
+            ["Unknown footprint", cov.get("unknownFootprints", 0)],
+            ["Secret values withheld", payload.get("redactions", 0)],
+            ["Run history", "not available"],
+        ]))
+
     # ---- overview --------------------------------------------------------
     parts.append(heading("Overview", 1))
     parts.append(table(["Metric", "Value"], [
