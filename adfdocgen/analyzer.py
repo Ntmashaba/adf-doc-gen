@@ -35,6 +35,11 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 ACTIVITY_CATALOG: Dict[str, Tuple[str, str]] = {
     "Copy":                     ("movement",    "Copies data from a source dataset to a sink dataset"),
     "ExecuteDataFlow":          ("transform",   "Runs a Mapping Data Flow (Spark)"),
+    "ExecuteWranglingDataflow": ("transform",   "Runs a Power Query (wrangling) data flow"),
+    "TridentNotebook":          ("transform",   "Runs a Microsoft Fabric notebook"),
+    "PBISemanticModelRefresh":  ("external",    "Refreshes a Power BI semantic model"),
+    "RefreshDataflow":          ("external",    "Refreshes a Power BI / Fabric dataflow"),
+    "Office365Outlook":         ("external",    "Sends an Office 365 Outlook email"),
     "DatabricksNotebook":       ("transform",   "Runs a Databricks notebook"),
     "DatabricksSparkPython":    ("transform",   "Runs a Python script on Databricks"),
     "DatabricksSparkJar":       ("transform",   "Runs a JAR on Databricks"),
@@ -73,7 +78,7 @@ ACTIVITY_CATALOG: Dict[str, Tuple[str, str]] = {
 # Activities whose real work happens in code ADF cannot see.
 OPAQUE_TYPES = {
     "DatabricksNotebook", "DatabricksSparkPython", "DatabricksSparkJar",
-    "SynapseNotebook", "SparkJob", "Custom", "ExecuteSSISPackage",
+    "SynapseNotebook", "SparkJob", "TridentNotebook", "Custom", "ExecuteSSISPackage",
     "HDInsightHive", "HDInsightPig", "HDInsightSpark", "HDInsightMapReduce",
     "HDInsightStreaming", "AzureMLBatchExecution", "AzureMLExecutePipeline",
 }
@@ -957,8 +962,14 @@ class Analyzer:
             bits.append(f"wait {as_text(tp.get('waitTimeInSeconds'))}s")
         elif atype == "Fail":
             bits.append("fail: " + squeeze(tp.get("message"), 150))
-        else:
-            bits.append(squeeze(json.dumps(tp, default=str), 250))
+        elif atype in ("PBISemanticModelRefresh", "RefreshDataflow", "TridentNotebook"):
+            ids = [f"{k} {squeeze(tp.get(k), 80)}" for k in
+                   ("workspaceId", "groupId", "datasetId", "dataflowId", "notebookId")
+                   if tp.get(k) not in (None, "")]
+            bits.append(", ".join(ids) or "target not named in the definition")
+        elif tp:
+            # Unknown activity: list setting names only. Values can hold secrets.
+            bits.append("settings: " + ", ".join(sorted(str(k) for k in tp)))
 
         if query_text:
             extras["query"] = squeeze(query_text, 4000)
