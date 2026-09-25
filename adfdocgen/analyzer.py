@@ -88,6 +88,7 @@ OPAQUE_TYPES = {
 # ---------------------------------------------------------------------------
 
 from .sql_harvest import harvest_sql  # noqa: E402  (token-based reader)
+from .redact import scrub_definitions  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -156,6 +157,40 @@ def canon_table(name: str) -> str:
     return ".".join(p.lower() for p in parts)
 
 
+def _norm_host(value: Optional[str]) -> str:
+    """server/account without scheme, port or trailing slash, lower-case."""
+    v = (value or "").strip().lower()
+    v = re.sub(r"^[a-z][a-z0-9+.-]*://", "", v)
+    v = re.sub(r"^tcp:", "", v)
+    v = re.sub(r"[,:]\d+$", "", v.split("/")[0])
+    return v
+
+
+def physical_key(kind: str, label: str, endpoint: Optional[dict], scope: str = "") -> str:
+    """Identity of a physical object: system location + database + object/path.
+
+    Two tables called dbo.Sales on different servers are different objects.
+    When the location is unknown the identity is scoped to the connection
+    (linked service) that reached it, never merged on the name alone.
+    """
+    ep = endpoint or {}
+    host = _norm_host(ep.get("server") or ep.get("url"))
+    where = host or (f"ls:{scope.lower()}" if scope else "")
+    if kind == "table":
+        name = canon_table(label)
+        parts = name.split(".")
+        db = (ep.get("database") or "").lower()
+        if len(parts) == 3:
+            db, name = parts[0], ".".join(parts[1:])
+        loc = "/".join(x for x in (where, db) if x)
+        return f"table:{loc}/{name}" if loc else f"table:{name}"
+    if kind == "file_path":
+        container = ep.get("container") or ""
+        path = "/".join(x for x in (container, ep.get("path") or "") if x) or label
+        return f"file_path:{where}/{path}" if where else f"file_path:{path}"
+    return f"{kind}:{label.lower()}"
+
+
 def split_table(name: str) -> Tuple[Optional[str], Optional[str]]:
     """schema, object from a possibly bracketed multi-part table name."""
     parts = [p.strip().strip("[]\"`") for p in re.split(r"\.(?![^\[]*\])", name or "") if p.strip()]
@@ -207,6 +242,42 @@ LS_SYSTEM = {
 }
 
 
+NON_SQL_SOURCE = ("cosmos", "mongo", "rest", "http", "odata", "dynamics", "salesforce",
+                  "dataexplorer", "search", "json", "delimited", "parquet", "binary",
+                  "avro", "orc", "xml", "excel", "sharepoint", "office365", "commondataservice")
+
+
+def is_sql_source(source_type: Any) -> bool:
+    """Whether a Copy/Lookup source's "query" setting holds SQL (not KQL, OData, Mongo...)."""
+    t = as_text(source_type).lower()
+    return bool(t) and not any(x in t for x in NON_SQL_SOURCE)
+
+
+_DS_PARAM_WHOLE = re.compile(r"^@\s*dataset\(\)\.(\w+)\s*$")
+_DS_PARAM_INLINE = re.compile(r"@\{\s*dataset\(\)\.(\w+)\s*\}")
+
+
+def bind_dataset_params(node: Any, values: Dict[str, str]) -> Any:
+    """Substitute literal parameter values into a dataset definition.
+
+    Only literals are bound; anything that depends on runtime values stays an
+    expression, so it is still reported as dynamic.
+    """
+    if isinstance(node, dict):
+        if node.get("type") == "Expression" and isinstance(node.get("value"), str):
+            bound = bind_dataset_params(node["value"], values)
+            return bound if not is_dynamic(bound) else {**node, "value": bound}
+        return {k: bind_dataset_params(v, values) for k, v in node.items()}
+    if isinstance(node, list):
+        return [bind_dataset_params(v, values) for v in node]
+    if isinstance(node, str):
+        m = _DS_PARAM_WHOLE.match(node)
+        if m and m.group(1) in values:
+            return values[m.group(1)]
+        return _DS_PARAM_INLINE.sub(lambda mm: values.get(mm.group(1), mm.group(0)), node)
+    return node
+
+
 def friendly_system(ls_type: str) -> str:
     return LS_SYSTEM.get(ls_type or "", ls_type or "Unknown")
 
@@ -248,10 +319,18 @@ def describe_linked_service(name: str, props: dict) -> dict:
 
     conn = tp.get("connectionString")
     if isinstance(conn, dict):
-        if not out["auth"]:
-            out["auth"] = "connection string via Key Vault"
-        out["keyVault"] = True
-        conn = ""
+        ctype = conn.get("type")
+        if ctype == "AzureKeyVaultSecret":
+            if not out["auth"]:
+                out["auth"] = "connection string via Key Vault"
+            out["keyVault"] = True
+            conn = ""
+        elif ctype == "SecureString":
+            # Stored in the definition itself, only masked in ADF Studio.
+            out["auth"] = out["auth"] or "connection string stored as SecureString in the definition"
+            conn = conn.get("value")
+        else:
+            conn = as_text(conn)
     conn = conn if isinstance(conn, str) else ""
     m = CONN_SERVER.search(conn)
     if m:
@@ -279,9 +358,24 @@ def describe_linked_service(name: str, props: dict) -> dict:
     return out
 
 
-def describe_dataset(name: str, props: dict) -> dict:
-    """Resolve a dataset definition to a normalised physical endpoint."""
-    tp = obj(props.get("typeProperties"))
+def describe_dataset(name: str, props: dict, params: Optional[dict] = None) -> dict:
+    """Resolve a dataset definition to a normalised physical endpoint.
+
+    params: values an activity passes for this invocation. Literal values (and
+    literal defaults) are bound; runtime expressions stay dynamic.
+    """
+    values = {}
+    for pname, spec in obj(props.get("parameters")).items():
+        default = obj(spec).get("defaultValue")
+        if isinstance(default, (str, int, float)) and not is_dynamic(default):
+            values[pname] = str(default)
+    for pname, val in obj(params).items() if isinstance(params, dict) else []:
+        text = as_text(val)
+        if isinstance(val, (str, int, float)) and not is_dynamic(text):
+            values[pname] = text
+        else:
+            values.pop(pname, None)
+    tp = obj(bind_dataset_params(props.get("typeProperties"), values))
     ds_type = props.get("type", "")
     ls = obj(props.get("linkedServiceName")).get("referenceName", "")
     out = {
@@ -462,11 +556,35 @@ def describe_trigger(name: str, props: dict) -> dict:
         detail.append("event: " + squeeze(json.dumps(
             {k: tp[k] for k in ("blobPathBeginsWith", "blobPathEndsWith", "events", "scope")
              if k in tp}, default=str), 200))
+    if rec.get("timeZone"):
+        detail.append(f"time zone {rec['timeZone']}")
+    sched = obj(rec.get("schedule"))
+    if sched:
+        bits = [f"{k} {','.join(as_text(x) for x in lst(v)) or as_text(v)}"
+                for k, v in sched.items() if v not in (None, [], {})]
+        if bits:
+            detail.append("at " + "; ".join(bits))
+    # Schedule/event triggers list pipelines; tumbling-window triggers name one.
+    targets = lst(props.get("pipelines")) or ([props["pipeline"]]
+                                              if isinstance(props.get("pipeline"), dict) else [])
+    starts, parameters = [], {}
+    for t in targets:
+        pl = obj(obj(t).get("pipelineReference")).get("referenceName", "")
+        if not pl:
+            continue
+        starts.append(pl)
+        if obj(t.get("parameters")):
+            parameters[pl] = {k: squeeze(v, 200) for k, v in t["parameters"].items()}
     return {
         "name": name, "type": ttype,
+        # The state saved in the definition, not a live check of the factory.
         "state": props.get("runtimeState", "") or "Unknown",
-        "startsPipelines": [obj(p.get("pipelineReference")).get("referenceName", "?")
-                            for p in lst(props.get("pipelines"))],
+        "stateSource": "definition",
+        "startsPipelines": starts,
+        "parameters": parameters,
+        "dependsOnTriggers": [obj(d.get("referenceTrigger")).get("referenceName", "")
+                              for d in lst(tp.get("dependsOn"))
+                              if obj(d.get("referenceTrigger")).get("referenceName")],
         "detail": " | ".join(detail),
     }
 
@@ -501,6 +619,7 @@ class Analyzer:
         self.warnings: List[dict] = []
         self.pipeline_calls: List[dict] = []          # {parent, child, activity, waitOnCompletion}
         self._df_done: Set[str] = set()
+        self._incomplete: List[str] = []
         self._no_retry: List[str] = []
 
     def warn(self, severity: str, category: str, message: str) -> None:
@@ -510,17 +629,18 @@ class Analyzer:
 
     def node(self, kind: str, label: str, role: str, ref: str,
              detail: str = "", alias: str = "",
-             endpoint: Optional[dict] = None) -> str:
+             endpoint: Optional[dict] = None, scope: str = "") -> str:
         """Register an entity and return its canonical graph key."""
         label = squeeze(label, 200)
         if not label:
             return ""
-        key = f"{kind}:{canon_table(label) if kind == 'table' else label.lower()}"
+        key = physical_key(kind, label, endpoint, scope)
         ent = self.entities.setdefault(key, {
             "kind": kind, "label": label, "aliases": set(),
             "roles": set(), "refs": set(), "detail": "",
             "dynamic": is_dynamic(label),
             "endpoint": dict(EMPTY_ENDPOINT),
+            "scope": scope or None,
         })
         ent["roles"].add(role)
         ent["refs"].add(ref)
@@ -561,7 +681,12 @@ class Analyzer:
         self.track_ref("dataset", ds_name, ref)
         info = self.ds_info.get(ds_name)
         if not info:
+            self._incomplete.append(f"dataset {ds_name}")
             return self.node("dataset", ds_name, role, ref, "definition not supplied")
+        if info["parameterized"]:
+            # Each invocation binds its own values: Orders and Customers passed to
+            # one parameterised dataset are two different objects.
+            info = describe_dataset(ds_name, self.store["dataset"][ds_name], params)
 
         ls = self.named("linkedservice", info["linkedService"])
         if ls:
@@ -582,9 +707,9 @@ class Analyzer:
         if display and not info["dynamic"]:
             if endpoint["object"]:
                 return self.node("table", display, role, ref, detail,
-                                 alias=ds_name, endpoint=endpoint)
+                                 alias=ds_name, endpoint=endpoint, scope=ls)
             return self.node("file_path", display, role, ref, detail,
-                             alias=ds_name, endpoint=endpoint)
+                             alias=ds_name, endpoint=endpoint, scope=ls)
         # dynamic or unresolved — keep the dataset itself as the node
         if display:
             detail = (detail + " | resolves to: " + squeeze(display, 120)).strip(" |")
@@ -593,19 +718,45 @@ class Analyzer:
             self.entities[key]["dynamic"] = True
         return key
 
+    def dataset_connection(self, ds_name: str, ref: str) -> Tuple[dict, str]:
+        """The connection a dataset supplies, without claiming its own table.
+
+        Used when a query replaces the dataset's table: the query names the
+        data, the dataset only says which server/database it runs against.
+        """
+        ds_name = self.named("dataset", ds_name)
+        self.track_ref("dataset", ds_name, ref)
+        info = self.ds_info.get(ds_name)
+        if not info:
+            self._incomplete.append(f"dataset {ds_name}")
+            return dict(EMPTY_ENDPOINT), ""
+        ls = self.named("linkedservice", info["linkedService"])
+        if ls:
+            self.track_ref("linked_service", ls, ref)
+            self.node("linked_service", ls, "connection for query", ref,
+                      detail=self.ls_info.get(ls, {}).get("system", ""))
+        return self._ls_endpoint(ls), ls
+
     def sql_nodes(self, sql: str, ref: str, read_role="read (SQL)",
-                  write_role="written (SQL)") -> Tuple[List[str], List[str]]:
+                  write_role="written (SQL)", context: Optional[dict] = None,
+                  scope: str = "") -> Tuple[List[str], List[str]]:
         reads, writes, procs = harvest_sql(sql)
-        rk = [self.node("table", t, read_role, ref,
-                        endpoint={**EMPTY_ENDPOINT,
-                                  "schema": split_table(t)[0], "object": split_table(t)[1]})
+        base = {k: (context or {}).get(k) for k in ("system", "server", "database", "url")}
+
+        def endpoint(name):
+            parts = [x for x in re.split(r"\.(?![^\[]*\])", name) if x]
+            ep = {**EMPTY_ENDPOINT, **base,
+                  "schema": split_table(name)[0], "object": split_table(name)[1]}
+            if len(parts) >= 3:     # database named in the query wins
+                ep["database"] = parts[-3].strip("[]\"`")
+            return ep
+
+        rk = [self.node("table", t, read_role, ref, endpoint=endpoint(t), scope=scope)
               for t in reads]
-        wk = [self.node("table", t, write_role, ref,
-                        endpoint={**EMPTY_ENDPOINT,
-                                  "schema": split_table(t)[0], "object": split_table(t)[1]})
+        wk = [self.node("table", t, write_role, ref, endpoint=endpoint(t), scope=scope)
               for t in writes]
         for p in procs:
-            self.node("stored_procedure", p, "executed", ref)
+            self.node("stored_procedure", p, "executed", ref, endpoint=endpoint(p), scope=scope)
         return [k for k in rk if k], [k for k in wk if k]
 
     def edge(self, sources, sinks, mechanism, pipeline, activity,
@@ -614,6 +765,9 @@ class Analyzer:
         sinks = [s for s in dict.fromkeys(sinks) if s]
         if not sources and not sinks:
             return
+        # An edge touching a runtime-resolved object is itself uncertain.
+        dynamic = dynamic or any(self.entities.get(k, {}).get("dynamic")
+                                 for k in sources + sinks)
         self.edges.append({
             "sources": sources, "sinks": sinks, "mechanism": mechanism,
             "pipeline": pipeline, "activity": activity,
@@ -726,7 +880,10 @@ class Analyzer:
         cat, default_desc = ACTIVITY_CATALOG.get(atype, ("other", ""))
         ref = f"{pipeline}::{name}"
         policy = obj(act.get("policy"))
+        self._incomplete = []
+        first_edge = len(self.edges)
         detail, reads, writes, extras = self._extract(pipeline, name, act, atype, tp, ref)
+        incomplete = list(dict.fromkeys(self._incomplete))
         row = {
             "activity": name, "type": atype, "category": cat, "scope": scope,
             "depth": depth,
@@ -749,8 +906,10 @@ class Analyzer:
                                      for k in row["reads"] + row["writes"])
         if dyn_extract or touches_dynamic_entity:
             row["dynamic"] = True
-        if atype in OPAQUE_TYPES:
+        if atype in OPAQUE_TYPES or any(e["opaque"] for e in self.edges[first_edge:]):
             row["opaque"] = True
+        if incomplete:
+            row["incomplete"] = incomplete
         if policy.get("retry"):
             row["retry"] = policy["retry"]
         if policy.get("timeout"):
@@ -767,26 +926,42 @@ class Analyzer:
 
         if atype == "Copy":
             src, snk = obj(tp.get("source")), obj(tp.get("sink"))
-            for item in lst(act.get("inputs")):
-                if item.get("type") == "DatasetReference":
-                    reads.append(self.dataset_node(item.get("referenceName", ""),
-                                                   "copy source", ref,
-                                                   item.get("parameters")))
-            for item in lst(act.get("outputs")):
-                if item.get("type") == "DatasetReference":
-                    writes.append(self.dataset_node(item.get("referenceName", ""),
-                                                    "copy sink", ref,
-                                                    item.get("parameters")))
             query = as_text(src.get("sqlReaderQuery") or src.get("oracleReaderQuery")
-                            or src.get("query"))
+                            or (src.get("query") if is_sql_source(src.get("type")) else None))
             proc = as_text(src.get("sqlReaderStoredProcedureName"))
             pre = as_text(snk.get("preCopyScript"))
-            r_k, _ = self.sql_nodes(query, ref, read_role="copy source (query)")
-            reads += r_k
-            if proc:
-                self.node("stored_procedure", proc, "copy source", ref)
-            _, w_k = self.sql_nodes(pre, ref, write_role="pre-copy script target")
-            writes += w_k
+            inputs = [i for i in lst(act.get("inputs")) if i.get("type") == "DatasetReference"]
+            outputs = [o for o in lst(act.get("outputs")) if o.get("type") == "DatasetReference"]
+            for item in inputs:
+                ds = item.get("referenceName", "")
+                if query or proc:
+                    # The query (or procedure) names the data; the dataset only
+                    # supplies the connection it runs on.
+                    ctx, ls = self.dataset_connection(ds, ref)
+                    r_k, _ = self.sql_nodes(query, ref, read_role="copy source (query)",
+                                            context=ctx, scope=ls)
+                    if proc:
+                        r_k.append(self.node("stored_procedure", proc, "copy source", ref,
+                                             endpoint={**ctx, "schema": split_table(proc)[0],
+                                                       "object": split_table(proc)[1]},
+                                             scope=ls))
+                    if not r_k:     # dynamic or unreadable query: say which dataset
+                        k = self.node("dataset", self.named("dataset", ds), "copy source (query)",
+                                      ref, "query could not be read statically", endpoint=ctx)
+                        self.entities[k]["dynamic"] = True
+                        r_k = [k]
+                    reads += r_k
+                    bits.append(f"connection: dataset {ds}")
+                else:
+                    reads.append(self.dataset_node(ds, "copy source", ref, item.get("parameters")))
+            for item in outputs:
+                ds = item.get("referenceName", "")
+                writes.append(self.dataset_node(ds, "copy sink", ref, item.get("parameters")))
+                if pre:
+                    ctx, ls = self.dataset_connection(ds, ref)
+                    _, w_k = self.sql_nodes(pre, ref, write_role="pre-copy script target",
+                                            context=ctx, scope=ls)
+                    writes += w_k
             bits.append(f"{src.get('type','?')} → {snk.get('type','?')}")
             if snk.get("writeBehavior") or snk.get("writeMethod"):
                 bits.append(f"write: {as_text(snk.get('writeBehavior') or snk.get('writeMethod'))}")
@@ -811,11 +986,19 @@ class Analyzer:
             ds = obj(tp.get("dataset")).get("referenceName", "")
             src = obj(tp.get("source"))
             query = as_text(src.get("sqlReaderQuery") or src.get("query"))
-            if ds:
+            if ds and query and is_sql_source(src.get("type")):
+                ctx, ls = self.dataset_connection(ds, ref)
+                r_k, _ = self.sql_nodes(query, ref, read_role="lookup (query)",
+                                        context=ctx, scope=ls)
+                if not r_k:     # dynamic or unreadable query: say which dataset
+                    k = self.node("dataset", self.named("dataset", ds), "lookup (query)",
+                                  ref, "query could not be read statically", endpoint=ctx)
+                    self.entities[k]["dynamic"] = True
+                    r_k = [k]
+                reads += r_k
+            elif ds:
                 reads.append(self.dataset_node(ds, "lookup", ref,
                                                obj(tp.get("dataset")).get("parameters")))
-            r_k, _ = self.sql_nodes(query, ref, read_role="lookup (query)")
-            reads += r_k
             bits.append("first row only" if tp.get("firstRowOnly", True) else "full rowset")
             if query:
                 query_text = query
@@ -842,7 +1025,7 @@ class Analyzer:
                            detail=f"on {ls}" if ls else "",
                            endpoint={**self._ls_endpoint(ls),
                                      "schema": split_table(proc)[0],
-                                     "object": split_table(proc)[1]})
+                                     "object": split_table(proc)[1]}, scope=ls)
             if ls:
                 self.track_ref("linked_service", ls, ref)
                 self.node("linked_service", ls, "proc target", ref)
@@ -860,10 +1043,12 @@ class Analyzer:
                 self.track_ref("linked_service", ls, ref)
                 self.node("linked_service", ls, "script target", ref)
             all_r, all_w, texts = [], [], []
+            ctx = self._ls_endpoint(ls)
             for s in lst(tp.get("scripts")):
                 text = as_text(s.get("text"))
                 r_k, w_k = self.sql_nodes(text, ref, read_role="read (script)",
-                                          write_role="written (script)")
+                                          write_role="written (script)",
+                                          context=ctx, scope=ls)
                 all_r += r_k
                 all_w += w_k
                 texts.append(f"-- [{s.get('type','Query')}]\n{text}")
@@ -885,7 +1070,10 @@ class Analyzer:
             bits.append(f"invokes: {child}" + ("" if wait else " (fire-and-forget)"))
             params = obj(tp.get("parameters"))
             if params:
-                bits.append("params: " + squeeze(json.dumps(params, default=str), 250))
+                declared = obj(obj(self.store["pipeline"].get(child)).get("parameters"))
+                shown = {k: ("[redacted]" if obj(declared.get(k)).get("type") == "SecureString"
+                             else v) for k, v in params.items()}
+                bits.append("params: " + squeeze(json.dumps(shown, default=str), 250))
 
         elif atype in ("ExecuteDataFlow", "ExecuteWranglingDataflow"):
             df_ref = tp.get("dataFlow") or obj(tp.get("dataflow"))
@@ -912,7 +1100,9 @@ class Analyzer:
                 writes += doc["sinkKeys"]
                 bits.append(f"{len(doc['steps'])} transformations")
             else:
-                bits.append("(definition not supplied — logic not expanded)")
+                bits.append("(definition not supplied — what it reads and writes is unknown)")
+                extras["footprintUnknown"] = True
+                self._incomplete.append(f"data flow {df}")
 
         elif atype in OPAQUE_TYPES:
             target = as_text(tp.get("notebookPath") or tp.get("pythonFile")
@@ -926,6 +1116,7 @@ class Analyzer:
                 self.node("linked_service", ls, "compute", ref)
             if target:
                 bits.append(f"{kind}: {target}")
+            extras["footprintUnknown"] = True
             params = tp.get("baseParameters") or obj(tp.get("parameters"))
             if params:
                 bits.append("params: " + squeeze(json.dumps(params, default=str), 250))
@@ -1012,11 +1203,10 @@ class Analyzer:
         props = self.store["dataflow"].get(df_name)
         if not props:
             return None
-        if df_name in self._df_done:
-            existing = next(d for d in self.dataflows if d["name"] == df_name)
-            if ref not in existing["usedBy"]:
-                existing["usedBy"].append(ref)
-            return existing
+        # A shared data flow is parsed once but linked for every invocation, so
+        # each calling pipeline gets its own references and movement edges.
+        existing = next((d for d in self.dataflows if d["name"] == df_name), None)
+        first = existing is None
         self._df_done.add(df_name)
 
         tp = obj(props.get("typeProperties"))
@@ -1045,9 +1235,10 @@ class Analyzer:
                      + [{"name": s.get("name", "?"), "op": "sink", "inputs": [],
                          "inputs_raw": [], "streams": [], "config": ""}
                         for s in lst(tp.get("sinks"))])
-            self.warn("info", "data flow",
-                      f"Data flow '{df_name}' lists its transformations without a script; "
-                      f"each sink is assumed to depend on every source.")
+            if first:
+                self.warn("info", "data flow",
+                          f"Data flow '{df_name}' lists its transformations without a script; "
+                          f"each sink is assumed to depend on every source.")
 
         order = dataflow_exec_order(steps)
         dead = dataflow_dead_ends(steps) if scripted else []
@@ -1067,6 +1258,10 @@ class Analyzer:
                       activity or df_name,
                       "Power Query mash-up" if wrangling else "no script: every source may feed every sink")
 
+        if not first:
+            if ref not in existing["usedBy"]:
+                existing["usedBy"].append(ref)
+            return existing
         doc = {
             "name": df_name,
             "description": squeeze(props.get("description"), 300) or None,
@@ -1134,6 +1329,8 @@ class Analyzer:
         for p in self.pipelines:
             p["ownReads"] = sorted({k for a in p["activities"] for k in a["reads"]})
             p["ownWrites"] = sorted({k for a in p["activities"] for k in a["writes"]})
+            p["ownIncomplete"] = sorted({x for a in p["activities"]
+                                         for x in a.get("incomplete", [])})
 
         memo: Dict[str, Tuple[Set[str], Set[str], Set[str]]] = {}
 
@@ -1144,16 +1341,14 @@ class Analyzer:
                 return set(), set(), set()
             p = by_name.get(name)
             if p is None:                   # child not supplied
-                return set(), set(), {name}
+                return set(), set(), {f"pipeline {name}"}
             visiting = visiting | {name}
-            r, w, miss = set(p["ownReads"]), set(p["ownWrites"]), set()
+            r, w, miss = set(p["ownReads"]), set(p["ownWrites"]), set(p["ownIncomplete"])
             for child in children.get(name, []):
                 cr, cw, cm = effective(child, visiting)
                 r |= cr
                 w |= cw
                 miss |= cm
-                if child not in by_name:
-                    miss.add(child)
             memo[name] = (r, w, miss)
             return memo[name]
 
@@ -1171,6 +1366,8 @@ class Analyzer:
                          for n, props in sorted(self.store["trigger"].items())]
         for t in self.triggers:
             t["startsPipelines"] = [self.named("pipeline", pl) for pl in t["startsPipelines"]]
+            t["parameters"] = {self.named("pipeline", pl): v for pl, v in t["parameters"].items()}
+            t["dependsOnTriggers"] = [self.named("trigger", d) for d in t["dependsOnTriggers"]]
         for t in self.triggers:
             for pl in t["startsPipelines"]:
                 self.track_ref("pipeline", pl, f"trigger {t['name']}")
@@ -1326,6 +1523,11 @@ class Analyzer:
                       f"Input file '{fname}' could not be parsed and was skipped: "
                       f"{meta['error']}")
 
+        for dup in obj(self.store.get("__input__")).get("duplicates", []):
+            self.warn("warning", "input",
+                      f"{dup['kind'].capitalize()} '{dup['name']}' is defined more than once "
+                      f"({', '.join(dup['files'])}); only the last definition was used.")
+
         sev_order = {"warning": 0, "info": 1}
         seen = set()
         deduped = []
@@ -1382,10 +1584,39 @@ class Analyzer:
                                    "detail": "ExecuteDataFlow"})
 
         n_missing = sum(1 for r in self.resolution if r["status"] == "MISSING")
-        mode = "partial" if n_missing else "factory"
+        inp = obj(self.store.get("__input__"))
+        skipped = len(obj(self.store.get("__skipped__")))
+        acts = [a for p in self.pipelines for a in p["activities"]]
+        coverage = {
+            "inputFormats": inp.get("formats", []),
+            "jsonFiles": inp.get("jsonFiles"),
+            "skippedFiles": skipped,
+            "duplicates": inp.get("duplicates", []),
+            "unrecognised": inp.get("unrecognised", []),
+            "deploymentValuesUsed": inp.get("deploymentValuesUsed", []),
+            "unresolvedReferences": n_missing,
+            "deploymentParameters": sum(1 for r in self.resolution
+                                        if r["status"] == "deployment parameter"),
+            "activities": len(acts),
+            "opaqueActivities": sum(1 for a in acts if a.get("opaque")),
+            "dynamicActivities": sum(1 for a in acts if a.get("dynamic")),
+            "unknownFootprints": sum(1 for a in acts if a.get("footprintUnknown")),
+            "runtimeHealth": "not available: generated from definitions, not run history",
+        }
+        # "factory" is a claim that nothing is missing. Skipped files or
+        # unresolved references make it partial; loose files that happen to be
+        # self-contained are a selection, not a proven whole factory.
+        whole = set(coverage["inputFormats"]) & {"ARM template", "Git folder"}
+        if n_missing or skipped:
+            mode = "partial"
+        elif whole:
+            mode = "factory"
+        else:
+            mode = "selection"
 
         return {
             "mode": mode,
+            "coverage": coverage,
             "factory": {
                 "pipelineCount": len(self.pipelines),
                 "datasetCount": len(self.store["dataset"]),
@@ -1419,4 +1650,7 @@ class Analyzer:
 
 
 def analyze(store: Dict[str, Dict[str, dict]]) -> dict:
-    return Analyzer(store).run()
+    redactions = scrub_definitions(store)
+    result = Analyzer(store).run()
+    result["redactions"] = redactions
+    return result

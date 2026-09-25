@@ -257,7 +257,9 @@ function rOverview(){
   ];
   const modeNote = MODE==="factory"
     ? `<div class="card note"><b>Design-time truth.</b> This document is derived statically from the factory's JSON definitions. It has no run history: nothing here can be called "working", "failing", or "actively used". Parameterised connections show the parameter or Key Vault secret <i>name</i>, never a value. A pipeline with no trigger here may still be invoked externally (REST API, Synapse, Logic Apps).</div>`
-    : `<div class="card note"><b>Partial input.</b> ${missing.length} referenced object(s) were not supplied, so parts of this analysis are incomplete — see the checklist below for exactly which JSON files to go back and export. Everything else stated is design-time truth: no run history, parameter/secret names never values, and external invocation invisible.</div>`;
+    : MODE==="selection"
+    ? `<div class="card note"><b>Selected objects.</b> These objects were exported one by one. Every reference between them resolved, but a selection cannot show that the whole factory was supplied: other pipelines may use the same objects. Design-time truth only: no run history.</div>`
+    : `<div class="card note"><b>Partial input.</b> ${missing.length} referenced object(s) were not supplied${(DATA.coverage||{}).skippedFiles?` and ${DATA.coverage.skippedFiles} input file(s) could not be read`:""}, so parts of this analysis are incomplete — see the checklist below for exactly which JSON files to go back and export. Everything else stated is design-time truth: no run history, parameter/secret names never values, and external invocation invisible.</div>`;
 
   const checklist = !missing.length ? "" : `
   <h2>Input completeness — what to export next</h2>

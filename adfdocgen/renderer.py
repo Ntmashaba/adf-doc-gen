@@ -12,16 +12,22 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .redact import scrub_payload
+
 TEMPLATE = Path(__file__).parent / "template.html"
 
 
 def build_payload(analysis: dict, title: str) -> dict:
-    return {
+    payload = {
         "title": title,
         "generator": "adf-doc-gen",
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         **analysis,
     }
+    # Safety net: every renderer reads this payload, so check it once here.
+    payload, extra = scrub_payload(payload)
+    payload["redactions"] = payload.get("redactions", 0) + extra
+    return payload
 
 
 def render_html(payload: dict, out_path: str | Path) -> Path:
