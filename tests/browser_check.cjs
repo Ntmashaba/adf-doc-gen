@@ -32,7 +32,7 @@ if(!D){ console.error("usage: node tests/browser_check.cjs <folder>"); process.e
           const n = await page.evaluate(() => document.querySelectorAll("[data-go]").length);
           for (let i = 0; i < n; i++) {
             await page.evaluate(t => switchTab(t), t);
-            await page.evaluate(i => { const x = document.querySelectorAll("[data-go]")[i]; if (x) x.click(); }, i);
+            await page.evaluate(i => { const x = document.querySelectorAll("[data-go]")[i]; if (x) x.dispatchEvent(new MouseEvent("click", {bubbles: true})); }, i);
             clicks++;
           }
         }

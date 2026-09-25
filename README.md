@@ -247,15 +247,18 @@ Documents have six sections, each with one or more views:
 
 The views:
 
-* **Orchestration**: the factory as a tree: triggers → the pipelines they
-  start → `ExecutePipeline` children → data flows. Entry points (pipelines
-  nothing here invokes) are listed separately. Repeated nodes show `↺`
-  instead of looping forever.
+* **Orchestration**: a diagram of triggers → the pipelines they start →
+  `ExecutePipeline` children → data flows. A pipeline called from several
+  places appears once, stopped triggers and fire-and-forget calls are dashed,
+  and hovering a box highlights its connections. A text outline is kept
+  below it.
 * **Impact explorer**: pick a table, file or pipeline to see what it depends
   on, what it feeds, which pipelines are affected and which triggers start
   them. Each is **confirmed** (a static data movement leads there) or
   **possible** (the path crosses a runtime-resolved target or opaque code).
-* **Movement edges**: every edge with opaque/dynamic filters, roots (external
+* **Movement edges**: a lineage map (external inputs → intermediates → final
+  outputs, dashed where a target is resolved at runtime, dotted where code
+  hides the work; filter it to one pipeline) and every edge with opaque/dynamic filters, roots (external
   inputs) and terminals (final products). The full transitive closure is
   behind a disclosure.
 * **Pipelines**: per pipeline, a one-line role plus **effective** reads and

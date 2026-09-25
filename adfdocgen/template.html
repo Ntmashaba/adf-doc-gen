@@ -169,7 +169,7 @@ table.t{table-layout:auto}
 .chip.on{background:var(--accent);border-color:var(--accent)}
 .hl{background:#E0E7FF!important}
 .eyebrow,.stat .lbl,.legend,.scopehdr{color:var(--ink2)}
-.act .kv .k{color:var(--ink2)}
+.act .kv .k,.act.kv .k{color:var(--ink2);font-family:var(--sans);text-transform:none;letter-spacing:0;font-size:.8rem}
 .conveyor .cell.mid{background:#1E293B;border-color:#1E293B}
 .conveyor .cell{border-color:#1E293B}
 .conveyor .joint{background:var(--accentSoft);color:var(--accent);border-color:#1E293B}
@@ -178,6 +178,51 @@ table.t{table-layout:auto}
 .table-wrap{overflow-x:auto;max-width:100%}
 .where{color:var(--ink2);font-size:.78em;margin-left:.3em}
 p,h1,h2,h3,li{overflow-wrap:anywhere}
+.graph{overflow:auto;max-height:75vh;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px;margin:.4rem 0 1rem}
+.graph.small{max-height:50vh}
+.graph svg{display:block;font-family:var(--sans)}
+.g-col{font-size:11px;fill:var(--ink2);text-transform:uppercase;letter-spacing:.06em}
+.g-node rect{fill:#fff;stroke:#94A3B8;stroke-width:1.2}
+.g-node .g-kind{font-size:10px;fill:var(--ink2);text-transform:uppercase;letter-spacing:.05em}
+.g-node .g-label{font-size:13px;font-weight:600;fill:var(--ink)}
+.g-node .g-sub{font-size:10.5px;fill:var(--ink2)}
+.g-node[data-go]{cursor:pointer}
+.g-node[data-go]:hover rect,.g-node:focus rect{stroke:var(--accent);stroke-width:2}
+.g-node:focus{outline:none}.g-node:focus rect{stroke-width:2.5}
+.g-edge{fill:none;stroke:#94A3B8;stroke-width:1.5}
+.g-arrow{fill:#94A3B8}
+.g-dim .g-node{opacity:.35}.g-dim .g-edge{opacity:.15}
+.g-dim .g-node.g-hot{opacity:1}.g-dim .g-edge.g-hot{opacity:1;stroke:var(--accent);stroke-width:2.2}
+.n-trigger rect{fill:#E2E8F0;stroke:#475569}
+.n-pipeline rect{fill:#EEF2FF;stroke:#6366F1}
+.n-dataflow rect{fill:#EDE9FE;stroke:#7C3AED}
+.n-missing rect{fill:#FFE4E6;stroke:#BE123C;stroke-dasharray:5 3}
+.n-stopped rect{stroke-dasharray:5 3;fill:#F8FAFC}
+.n-src rect{fill:#CCFBF1;stroke:#0F766E}.n-snk rect{fill:#FEF3C7;stroke:#B45309}
+.n-mid rect{fill:#fff;stroke:#64748B}.n-xform rect{fill:#E0E7FF;stroke:#4338CA}
+.n-code rect{fill:#EDE9FE;stroke:#6D28D9}
+.n-focus rect{fill:#4F46E5;stroke:#312E81}.n-focus .g-label,.n-focus .g-kind,.n-focus .g-sub{fill:#fff}
+.n-possible rect{stroke-dasharray:5 3}
+.n-dead rect{stroke:#BE123C;stroke-width:2}
+.n-cat-movement rect{fill:#FEF3C7;stroke:#B45309}.n-cat-transform rect{fill:#E0E7FF;stroke:#4338CA}
+.n-cat-orchestration rect{fill:#EEF2FF;stroke:#6366F1}.n-cat-read rect{fill:#CCFBF1;stroke:#0F766E}
+.n-cat-control rect{fill:#F1F5F9;stroke:#64748B}.n-cat-external rect{fill:#EDE9FE;stroke:#6D28D9}
+.n-cat-management rect{fill:#FFE4E6;stroke:#BE123C}.n-cat-other rect{fill:#fff;stroke:#94A3B8}
+.e-trigger{stroke:#475569}.e-stopped{stroke:#94A3B8;stroke-dasharray:4 4}.e-df{stroke:#7C3AED}.e-async{stroke-dasharray:6 4}
+.e-ok{stroke:#047857}.e-fail{stroke:#BE123C}.e-done{stroke:#475569;stroke-dasharray:6 3}.e-skip{stroke:#B45309;stroke-dasharray:2 3}
+.e-dyn{stroke:#B45309;stroke-dasharray:6 3}.e-opaque{stroke:#64748B;stroke-dasharray:2 3}
+.legend{display:flex;flex-wrap:wrap;gap:.35rem 1rem;font-size:.8rem;color:var(--ink2);margin:.3rem 0}
+.legend span{display:inline-flex;align-items:center;gap:.35rem}
+.lg{display:inline-block;width:14px;height:10px;border-radius:3px;border:1.5px solid #94A3B8;background:#fff}
+.lg.n-trigger{background:#E2E8F0;border-color:#475569}.lg.n-pipeline{background:#EEF2FF;border-color:#6366F1}
+.lg.n-dataflow{background:#EDE9FE;border-color:#7C3AED}.lg.n-missing{background:#FFE4E6;border-color:#BE123C;border-style:dashed}
+.lg.n-src{background:#CCFBF1;border-color:#0F766E}.lg.n-snk{background:#FEF3C7;border-color:#B45309}
+.lg.n-mid{border-color:#64748B}.lg.n-xform{background:#E0E7FF;border-color:#4338CA}.lg.n-code{background:#EDE9FE;border-color:#6D28D9}
+.lg.n-focus{background:#4F46E5;border-color:#312E81}.lg.n-possible{border-style:dashed}.lg.n-dead{border-color:#BE123C;border-width:2px}
+.lg[class*=" e-"]{height:0;border-width:2px 0 0;border-radius:0;width:22px;background:none}
+.lg.e-stopped{border-color:#94A3B8;border-top-style:dashed}.lg.e-async{border-color:#6366F1;border-top-style:dashed}
+.lg.e-ok{border-color:#047857}.lg.e-fail{border-color:#BE123C}.lg.e-done{border-color:#475569;border-top-style:dashed}
+.lg.e-skip{border-color:#B45309;border-top-style:dotted}.lg.e-dyn{border-color:#B45309;border-top-style:dashed}.lg.e-opaque{border-color:#64748B;border-top-style:dotted}
 .subtabs{display:flex;flex-wrap:wrap;gap:.2rem;border-bottom:1px solid var(--line);margin:-.2rem 0 1.1rem}
 .subtab{border:0;background:none;font:inherit;color:var(--ink2);padding:.55rem .85rem;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer}
 .subtab:hover{color:var(--ink)}.subtab.active{color:var(--ink);font-weight:600;border-bottom-color:var(--accent)}
@@ -206,7 +251,7 @@ ul.plain{list-style:none;padding:0}ul.plain li{margin:.3rem 0}
 .grid>*,.layout>*{min-width:0}
 main{overflow-wrap:anywhere}
 .act.kv{display:grid;grid-template-columns:130px 1fr;gap:.15rem .8rem}
-.act.kv .k{color:var(--ink2);font-size:.74rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;padding-top:.1rem}
+.act.kv .k{color:var(--ink2);font-size:.8rem;padding-top:.1rem}
 @media (max-width:860px){.act.kv{grid-template-columns:1fr}}
 @media (max-width:860px){
   table.t{display:block;overflow-x:auto;max-width:100%}
@@ -491,7 +536,156 @@ function priorityIssues(){
   <p>${go("section","issues",`All ${n} review issue(s)`)}</p>`;
 }
 
+
+/* ============================================================ diagrams */
+/* A small layered-graph renderer (no libraries): columns by longest path from
+   the starting nodes, rows ordered to reduce crossings, curved edges.
+   Nodes are keyboard-focusable links when they carry a data-go target. */
+function layoutGraph(nodes, edges){
+  const ids = nodes.map(n=>n.id), has = new Set(ids);
+  const byId = Object.fromEntries(nodes.map(n=>[n.id,n]));
+  edges = edges.filter(e=>has.has(e.from)&&has.has(e.to)&&e.from!==e.to);
+  const out = {}, inn = {};
+  ids.forEach(i=>{ out[i]=[]; inn[i]=[]; });
+  edges.forEach(e=>{ out[e.from].push(e.to); inn[e.to].push(e.from); });
+  // Back edges (cycles) are found by DFS and ignored when ranking.
+  const state = {}, back = new Set();
+  const visit = u=>{ state[u]=1; for(const v of out[u]){ if(state[v]===1) back.add(u+"→"+v); else if(!state[v]) visit(v); } state[u]=2; };
+  ids.forEach(i=>{ if(!state[i]) visit(i); });
+  const order = [], seen = {};
+  const topo = u=>{ if(seen[u]) return; seen[u]=1; for(const v of out[u]) if(!back.has(u+"→"+v)) topo(v); order.push(u); };
+  ids.forEach(topo); order.reverse();
+  // Rank = longest path, respecting a node's minimum column (e.g. pipelines after triggers).
+  const rank = {};
+  for(const u of order){
+    let r = byId[u].col ?? 0;
+    for(const p of inn[u]) if(!back.has(p+"→"+u)) r = Math.max(r, (rank[p]??0)+1);
+    rank[u] = r;
+  }
+  // Pull sources right next to their first target so they don't sit far left.
+  for(const u of [...order].reverse()){
+    if(inn[u].length || byId[u].col!=null || !out[u].length) continue;
+    const t = Math.min(...out[u].filter(v=>!back.has(u+"→"+v)).map(v=>rank[v]));
+    if(isFinite(t)) rank[u] = Math.max(rank[u], t-1);
+  }
+  // Long edges pass through invisible waypoints, one per column they cross,
+  // so they are routed between boxes instead of through them.
+  const cols = [], G = {}, routes = [];
+  const place = (id,c)=>{ (cols[c]=cols[c]||[]).push(id); };
+  ids.forEach(i=>{ place(i, rank[i]); G[i] = {up:[], down:[]}; });
+  let k = 0;
+  for(const e of edges){
+    let a = rank[e.from], z = rank[e.to], chain = [e.from];
+    if(z-a>1){ for(let c=a+1;c<z;c++){ const d = "·"+(k++); place(d,c); G[d]={up:[],down:[],dummy:true}; chain.push(d); } }
+    chain.push(e.to);
+    for(let i=1;i<chain.length;i++){ G[chain[i-1]].down.push(chain[i]); G[chain[i]].up.push(chain[i-1]); }
+    routes.push({e, chain});
+  }
+  for(let c=0;c<cols.length;c++) cols[c] = cols[c] || [];
+  const pos = {};
+  const setPos = ()=>cols.forEach(col=>col.forEach((id,i)=>pos[id]=i));
+  setPos();
+  const bary = (id, dir, c) => { const nb = G[id][dir].filter(x=>pos[x]!=null && cols[c]?.includes(x)).map(x=>pos[x]);
+    return nb.length ? nb.reduce((x,y)=>x+y,0)/nb.length : null; };
+  for(let sweep=0; sweep<8; sweep++){
+    const down = sweep%2===0;
+    const range = down ? [...cols.keys()].slice(1) : [...cols.keys()].reverse().slice(1);
+    for(const c of range){
+      const key = {}; cols[c].forEach(id=>{ const b = bary(id, down?"up":"down", down?c-1:c+1); key[id] = b==null ? pos[id] : b; });
+      cols[c].sort((x,y)=>key[x]-key[y]); setPos();
+    }
+  }
+  return {cols, rank, routes, dummy: id => G[id]?.dummy};
+}
+const GW = 210, GH = 52, GX = 70, GY = 14, GD = 10;
+function clip(t, n){ t = String(t??""); return t.length>n ? t.slice(0,n-1)+"…" : t; }
+function graphSVG(nodes, edges, opts={}){
+  if(!nodes.length) return `<div class="empty">Nothing to draw.</div>`;
+  const {cols, routes, dummy} = layoutGraph(nodes, edges);
+  const hOf = id => dummy(id) ? GD : GH;
+  const colH = cols.map(c=>c.reduce((t,id)=>t+hOf(id),0) + Math.max(0,c.length-1)*GY);
+  const top = opts.columns ? 22 : 0;
+  const H = Math.max(...colH, GH) + 20, W = cols.length*GW + (cols.length-1)*GX + 20;
+  const xy = {};
+  cols.forEach((col,c)=>{ let y = (H-20-colH[c])/2 + 10 + top;
+    col.forEach(id=>{ xy[id] = {x: 10 + c*(GW+GX), y}; y += hOf(id)+GY; }); });
+  const heads = opts.columns ? opts.columns.map((t,c)=>c<cols.length&&t?`<text class="g-col" x="${10+c*(GW+GX)}" y="14">${esc(t)}</text>`:"").join("") : "";
+  const pt = (id, side) => { const p = xy[id];
+    if(dummy(id)) return {x: side==="in" ? p.x : p.x+GW, y: p.y+GD/2};
+    return {x: side==="in" ? p.x : p.x+GW, y: p.y+GH/2}; };
+  const path = chain => {
+    let d = "";
+    for(let i=1;i<chain.length;i++){
+      const a = pt(chain[i-1],"out"), b = pt(chain[i],"in");
+      if(i===1) d += `M${a.x},${a.y}`;
+      else d += ` L${a.x},${a.y}`;           // straight run through a waypoint's column
+      if(b.x<=a.x){ const dy = Math.max(a.y,b.y)+GH/2+10; d += ` C${a.x+40},${a.y} ${a.x+40},${dy} ${(a.x+b.x)/2},${dy} S${b.x-40},${b.y} ${b.x},${b.y}`; }
+      else { const m=(a.x+b.x)/2; d += ` C${m},${a.y} ${m},${b.y} ${b.x},${b.y}`; }
+    }
+    return d; };
+  const ed = routes.map(({e,chain})=>`<path class="g-edge ${e.cls||""}" d="${path(chain)}" data-from="${esc(e.from)}" data-to="${esc(e.to)}" marker-end="url(#arr)">${e.title?`<title>${esc(e.title)}</title>`:""}</path>`).join("");
+  const nd = nodes.map(n=>{ const p = xy[n.id]; if(!p) return "";
+    const link = n.go ? ` data-go="${n.go}" data-arg="${esc(n.arg)}" tabindex="0" role="link"` : "";
+    const lbl = clip(n.label, 26), sub = clip(n.sub||"", 33);
+    return `<g class="g-node ${n.cls||""}" data-id="${esc(n.id)}" transform="translate(${p.x},${p.y})"${link} aria-label="${esc(n.kind?n.kind+": ":"")}${esc(n.label)}">
+      <title>${esc(n.kind?n.kind+": ":"")}${esc(n.label)}${n.sub?"\n"+esc(n.sub):""}</title>
+      <rect width="${GW}" height="${GH}" rx="10"/>
+      ${n.kind?`<text class="g-kind" x="11" y="16">${esc(clip(n.kind,34))}</text>`:""}
+      <text class="g-label" x="11" y="${n.kind?32:24}">${esc(lbl)}</text>
+      ${sub?`<text class="g-sub" x="11" y="${n.kind?45:40}">${esc(sub)}</text>`:""}</g>`; }).join("");
+  return `<div class="graph${opts.cls?" "+opts.cls:""}" role="img" aria-label="${esc(opts.label||"Diagram")}">
+    <svg width="${W}" height="${H+top}" viewBox="0 0 ${W} ${H+top}" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="g-arrow"/></marker></defs>
+    ${heads}${ed}${nd}</svg></div>`;
+}
+/* Hover or focus a node: highlight its edges and neighbours. */
+function graphHover(ev, on){
+  const g = ev.target.closest && ev.target.closest(".g-node"); if(!g) return;
+  const svg = g.ownerSVGElement, id = g.dataset.id;
+  svg.classList.toggle("g-dim", on);
+  const near = new Set([id]);
+  svg.querySelectorAll(".g-edge").forEach(p=>{ const hit = p.dataset.from===id||p.dataset.to===id;
+    p.classList.toggle("g-hot", on&&hit); if(hit){ near.add(p.dataset.from); near.add(p.dataset.to); } });
+  svg.querySelectorAll(".g-node").forEach(n=>n.classList.toggle("g-hot", on&&near.has(n.dataset.id)));
+}
+document.addEventListener("mouseover", e=>graphHover(e,true));
+document.addEventListener("mouseout", e=>graphHover(e,false));
+document.addEventListener("focusin", e=>graphHover(e,true));
+document.addEventListener("focusout", e=>graphHover(e,false));
+document.addEventListener("keydown", e=>{
+  if((e.key==="Enter"||e.key===" ") && e.target.matches && e.target.matches("g[data-go]")){ e.preventDefault(); e.target.dispatchEvent(new MouseEvent("click",{bubbles:true})); }
+});
+const legend = items => `<div class="legend">${items.map(([cls,t])=>`<span><i class="lg ${cls}"></i>${t}</span>`).join("")}</div>`;
+
 /* ============================================================ orchestration */
+function orchestrationGraph(){
+  const nodes = [], edges = [], seen = new Set();
+  const addPl = name => { const id = "pipeline:"+name; if(seen.has(id)) return; seen.add(id);
+    const p = PIDX[name];
+    const r = p ? p.effectiveReads.filter(k=>PHYSICAL.has(EIDX[k]?.kind)).length : 0, w = p ? p.effectiveWrites.filter(k=>PHYSICAL.has(EIDX[k]?.kind)).length : 0;
+    nodes.push({id, kind:p&&p.entryPoint?"pipeline · entry point":"pipeline", label:name,
+      sub: p ? (p.invokes.length?`calls ${p.invokes.length} · `:"")+`reads ${r} · writes ${w}`+(p.opaqueCount?` · ${p.opaqueCount} opaque`:"") : "not supplied",
+      cls: p ? "n-pipeline" : "n-missing", go: p?"pipe":null, arg:name, col: DATA.triggers.length?1:0}); };
+  for(const t of DATA.triggers){
+    const stopped = t.state && t.state.toLowerCase()!=="started";
+    nodes.push({id:"trigger:"+t.name, kind:"trigger"+(stopped?" · "+t.state.toLowerCase():""), label:t.name,
+      sub:(t.detail||t.type).split(" | ")[0].replace(/ from \S+/,""), cls:"n-trigger"+(stopped?" n-stopped":""), go:"trg", arg:t.name, col:0});
+  }
+  for(const e of DATA.orchestration.edges){
+    if(e.fromKind==="pipeline") addPl(e.from);
+    if(e.toKind==="pipeline") addPl(e.to);
+    if(e.toKind==="dataflow" && !seen.has("dataflow:"+e.to)){ seen.add("dataflow:"+e.to);
+      const d = DFIDX[e.to];
+      nodes.push({id:"dataflow:"+e.to, kind:"data flow", label:e.to, sub:d?`${d.sources.length} source(s) · ${d.sinks.length} sink(s)`:"not supplied",
+        cls:d?"n-dataflow":"n-missing", go:d?"df":null, arg:e.to}); }
+    const stopped = e.fromKind==="trigger" && /stopped/i.test(e.detail);
+    edges.push({from:e.fromKind+":"+e.from, to:e.toKind+":"+e.to,
+      cls: e.fromKind==="trigger" ? (stopped?"e-stopped":"e-trigger") : e.toKind==="dataflow" ? "e-df" : (/fire-and-forget/.test(e.detail)?"e-async":""),
+      title: e.detail});
+  }
+  DATA.pipelines.forEach(p=>addPl(p.name));
+  return graphSVG(nodes, edges, {label:"Orchestration diagram", columns:DATA.triggers.length?["Triggers","Pipelines"]:["Pipelines"]});
+}
 function rOrchestration(){
   const childEdges = DATA.orchestration.edges;
   const kids = {};
@@ -524,10 +718,14 @@ function rOrchestration(){
     .map(p=>branch("pipeline", p.name, "", 0)).join("");
   const orphanNote = DATA.pipelines.some(p=>p.entryPoint)
     ? `<p class="sub">Entry points are pipelines no trigger or pipeline in this factory starts. That is normal for orchestrators — but a worker pipeline here may be dead, or invoked externally (REST API, Synapse, Logic Apps); this document cannot tell which.</p>` : "";
-  return `<h1>Orchestration — how work starts and cascades</h1>
-  <p class="sub">The factory as a tree: triggers first, then pipelines nothing here invokes, drilling into ExecutePipeline calls and data flows. Click any name for its detail.</p>
+  return `<h1>Orchestration: how work starts and cascades</h1>
+  <p class="sub">Triggers on the left start pipelines; arrows show which pipeline calls which, and which data flows each runs. A pipeline called from several places appears once. Hover a box to follow its connections; select it to open its detail.</p>
+  ${legend([["n-trigger","trigger"],["n-pipeline","pipeline"],["n-dataflow","data flow"],["n-missing","not supplied"],["e-stopped","stopped trigger"],["e-async","fire-and-forget call"]])}
+  ${orchestrationGraph()}
+  <details id="orch-outline"><summary>Outline (text version)</summary><div class="body">
   ${DATA.triggers.length?`<h2>From triggers</h2><ul class="tree">${triggerRoots}</ul>`:`<div class="empty"><b>No triggers supplied.</b><br>How these pipelines start is invisible to this document — they may be scheduled elsewhere or invoked externally.</div>`}
-  ${entryRoots?`<h2>Entry points (no known invoker in this factory)</h2>${orphanNote}<ul class="tree">${entryRoots}</ul>`:""}`;
+  ${entryRoots?`<h2>Entry points (no known invoker in this factory)</h2>${orphanNote}<ul class="tree">${entryRoots}</ul>`:""}
+  </div></details>`;
 }
 
 /* ============================================================ lineage */
@@ -536,13 +734,10 @@ function rLineage(){
   const movers = DATA.entities.filter(e=>e.upstream.length||e.downstream.length);
   const roots = movers.filter(e=>!e.upstream.length);
   const leaves = movers.filter(e=>!e.downstream.length);
-  return `<h1>Data movement lineage</h1>
-  <p class="sub">The file to consult for "where does X come from?", "what writes to warehouse Y?", and "if server Z dies, which pipelines break?". Edges marked <span class="badge b-info">opaque</span> hand off to code ADF cannot see — the chain is broken there, so absence of a downstream entry past that point is <b>not</b> evidence data does not flow. <span class="badge b-warn">dynamic</span> targets are built at runtime; the static name is indicative only.</p>
-  <h2>Impact explorer</h2>
-  <div class="card">
-    <input class="search" id="lin-q" placeholder="Type a table, path, server, or dataset…" oninput="linExplore(this.value)">
-    <div id="lin-result" class="mut">Pick an entity to see everything upstream (its dependencies) and downstream (its blast radius), transitively.</div>
-  </div>
+  return `<h1>Data movement</h1>
+  <p class="sub">Where data comes from and where it lands. Edges marked <span class="badge b-info">opaque</span> hand off to code ADF cannot see — the chain is broken there, so absence of a downstream entry past that point is <b>not</b> evidence data does not flow. <span class="badge b-warn">dynamic</span> targets are built at runtime; the static name is indicative only.</p>
+  <h2>Lineage map</h2>
+  ${lineageMap()}
   <h2>Movement edges <span class="mut" style="font-weight:400">(${DATA.lineageEdges.length})</span></h2>
   <div class="filter-row">
     ${["all","opaque","dynamic"].map(f=>`<button class="chip ${linFilter===f?"on":""}" onclick="linFilter='${f}';switchTab('lineage')">${f}</button>`).join("")}
@@ -572,23 +767,19 @@ function rLineage(){
     <td>${e.downstream.map(entLink).join(", ")||'<span class="mut">— terminal —</span>'}</td></tr>`).join("")}
   </tbody></table></div></details>`;
 }
-function linExplore(q){
-  q = q.trim().toLowerCase();
-  const host = document.getElementById("lin-result");
-  if(q.length<2){ host.innerHTML = '<span class="mut">Pick an entity to see everything upstream and downstream, transitively.</span>'; return; }
-  const hits = DATA.entities.filter(e =>
-    e.label.toLowerCase().includes(q) ||
-    e.aliases.some(a=>a.toLowerCase().includes(q)) ||
-    Object.values(e.endpoint).some(v=>v&&String(v).toLowerCase().includes(q))
-  ).slice(0,8);
-  if(!hits.length){ host.innerHTML = `<span class="mut">No entity matches "${esc(q)}".</span>`; return; }
-  host.innerHTML = hits.map(e=>`
-    <div style="border-top:1px solid var(--line2);padding:.55rem 0">
-      <b>${entLink(e.key)}</b> <span class="badge b-other">${esc(e.kind)}</span> ${e.dynamic?'<span class="badge b-warn">dynamic</span>':""}
-      <div class="mut" style="margin:.25rem 0">Depends on: ${e.upstream.map(entLink).join(", ")||"— nothing in this factory (root) —"}</div>
-      <div class="mut">Feeds: ${e.downstream.map(entLink).join(", ")||"— nothing in this factory (terminal) —"}</div>
-      <div class="mut" style="margin-top:.25rem">Touched by: ${e.referencedBy.slice(0,5).map(esc).join("; ")}${e.referencedBy.length>5?" …":""}</div>
-    </div>`).join("");
+let MAP_PIPE = "";
+function lineageMap(){
+  const edges = DATA.lineageEdges.filter(e=>!MAP_PIPE||e.pipeline===MAP_PIPE);
+  const keys = new Set(edges.flatMap(e=>[...e.sources,...e.sinks]).filter(k=>EIDX[k] && EIDX[k].kind!=="linked_service"));
+  const pick = `<label class="field"><span>Show movements by</span><select onchange="MAP_PIPE=this.value;switchTab('lineage')">
+    <option value="">all pipelines</option>${DATA.pipelines.map(p=>`<option value="${esc(p.name)}"${p.name===MAP_PIPE?" selected":""}>${esc(p.name)}</option>`).join("")}</select></label>`;
+  if(keys.size>160) return pick+`<div class="card note">This factory moves ${keys.size} objects; choose a pipeline to draw its part of the map.</div>`;
+  const nodes = [...keys].map(k=>{ const e = EIDX[k]; const ops = new Set((e.usage||[]).map(u=>u.operation));
+    return {id:k, kind:(KIND_LABEL[e.kind]||e.kind)+(e.dynamic?" · dynamic":""), label:e.label, sub:entWhere(e),
+      cls: e.kind==="notebook"||e.kind==="stored_procedure"||e.kind==="code_artifact"||e.kind==="endpoint" ? "n-code" : !e.upstream.length ? "n-src" : !e.downstream.length ? "n-snk" : "n-mid", go:"obj", arg:k}; });
+  const flat = edges.flatMap(e=>e.sources.flatMap(s=>e.sinks.map(t=>({from:s, to:t, cls:e.opaque?"e-opaque":e.dynamic?"e-dyn":"", title:`${e.mechanism}: ${e.pipeline} :: ${e.activity}`}))));
+  return pick + legend([["n-src","external input"],["n-mid","intermediate"],["n-snk","final output"],["n-code","code / endpoint"],["e-dyn","runtime-resolved"],["e-opaque","opaque"]])
+    + graphSVG(nodes, flat, {label:"Lineage map"});
 }
 
 /* ============================================================ pipelines */
@@ -618,12 +809,29 @@ function actRow(a){
     </div>
   </details>`;
 }
+const COND_CLS = {Succeeded:"e-ok", Failed:"e-fail", Completed:"e-done", Skipped:"e-skip"};
+function activityGraph(acts, scope){
+  if(acts.length<2 && !acts.some(a=>a.dependsOn.length)) return "";
+  const names = new Set(acts.map(a=>a.activity));
+  const nodes = acts.map(a=>{
+    const inner = DATA.pipelines.flatMap(p=>p.activities).filter(x=>x.scope.startsWith((scope==="(root)"?"":scope+" > ")+a.activity+" [")).length;
+    const target = a.invokesPipeline ? "→ "+a.invokesPipeline : a.invokesDataflow ? "→ "+a.invokesDataflow : "";
+    return {id:a.activity, kind:a.type+(a.opaque?" · opaque":"")+(a.dynamic?" · dynamic":""), label:a.activity,
+      sub: target || (inner?`contains ${inner} activit${inner===1?"y":"ies"}`:(a.reads.length||a.writes.length?`reads ${a.reads.length} · writes ${a.writes.length}`:"")),
+      cls:"n-cat-"+a.category+(a.inactive?" n-stopped":"")};
+  });
+  const edges = acts.flatMap(a=>a.dependsOn.filter(d=>names.has(d.activity)).map(d=>{
+    const on = (d.on||"Succeeded").split(",")[0];
+    return {from:d.activity, to:a.activity, cls:COND_CLS[on]||"", title:`${a.activity} runs after ${d.activity}: ${d.on||"Succeeded"}`}; }));
+  return graphSVG(nodes, edges, {label:"Activity flow", cls:"small"});
+}
 function rPipelines(){
   const cards = DATA.pipelines.map(p=>{
     const scopes = {};
     for(const a of p.activities) (scopes[a.scope] = scopes[a.scope] || []).push(a);
     const scopeHtml = Object.entries(scopes).map(([scope, acts])=>`
       ${scope==="(root)"?"":`<div class="scopehdr">inside ${esc(scope)}</div>`}
+      ${activityGraph(acts, scope)}
       ${acts.slice().sort((x,y)=>(x.step===0?99:x.step)-(y.step===0?99:y.step)||x.activity.localeCompare(y.activity)).map(actRow).join("")}`).join("");
     const badges = [
       p.entryPoint?'<span class="badge b-orchestration">entry point</span>':"",
@@ -648,7 +856,8 @@ function rPipelines(){
           <div class="k">Reads (effective)</div><div>${entPills(p.effectiveReads,"b-src")}${p.effectiveIncomplete.length?` <span class="mut">— incomplete: ${p.effectiveIncomplete.map(esc).join(", ")} not supplied, so their reads and writes are unknown</span>`:""}</div>
           <div class="k">Writes (effective)</div><div>${entPills(p.effectiveWrites,"b-snk")}${p.effectiveIncomplete.length?` <span class="mut">— incomplete</span>`:""}</div>
         </div>
-        <h3>Activity flow <span class="mut" style="font-weight:400">(step number = execution order; equal steps can run in parallel)</span></h3>
+        <h3>Activity flow</h3>
+        ${legend([["e-ok","on success"],["e-fail","on failure"],["e-done","on completion"],["e-skip","on skip"]])}
         ${scopeHtml}
       </div>
     </details>`;
@@ -666,6 +875,15 @@ function fCards(q, listId){
 }
 
 /* ============================================================ data flows */
+function dataflowGraph(df){
+  const stepName = x => String(x).split("@")[0].trim();
+  const names = new Set(df.steps.map(s=>s.name));
+  const nodes = df.steps.map(s=>({id:s.name, kind:s.op, label:s.name,
+    sub: s.op==="source" ? ((df.sources.find(x=>x.stream===s.name)||{}).label||"") : s.op==="sink" ? ((df.sinks.find(x=>x.stream===s.name)||{}).label||"") : "",
+    cls: (s.op==="source"?"n-src":s.op==="sink"?"n-snk":"n-xform")+(s.deadEnd?" n-dead":"")}));
+  const edges = df.steps.flatMap(s=>s.inputs.map(stepName).filter(i=>names.has(i)).map(i=>({from:i, to:s.name})));
+  return legend([["n-src","source"],["n-xform","transformation"],["n-snk","sink"],["n-dead","output nothing uses"]]) + graphSVG(nodes, edges, {label:"Data flow "+df.name});
+}
 function rDataflows(){
   const cards = DATA.dataflows.map(df=>`
     <details id="df-${slug(df.name)}">
@@ -680,7 +898,9 @@ function rDataflows(){
           <div class="card" style="margin:0"><div class="eyebrow" style="color:var(--snk)">Sinks</div>
             ${df.sinks.map(s=>`<div style="margin-top:.3rem"><span class="ref">${esc(s.stream)}</span> → ${s.dataset?dsLink(s.dataset):esc(s.label)}</div>`).join("")||'<span class="mut">—</span>'}</div>
         </div>
-        <h3>Transformation chain <span class="mut" style="font-weight:400">(execution order)</span></h3>
+        <h3>Transformations</h3>
+        ${dataflowGraph(df)}
+        <details><summary>Step table</summary><div class="body table-wrap">
         <table class="t"><thead><tr><th>#</th><th>Step</th><th>Op</th><th>Inputs</th><th>Output streams</th><th>Config</th></tr></thead><tbody>
         ${df.steps.slice().sort((a,b)=>(a.execOrder||1e6)-(b.execOrder||1e6)).map(s=>`<tr>
           <td class="mut">${s.execOrder||"?"}</td>
@@ -689,7 +909,7 @@ function rDataflows(){
           <td class="mut">${s.inputs.map(esc).join("; ")||"—"}</td>
           <td class="mut">${s.outputStreams.map(esc).join("; ")||"—"}</td>
           <td class="mut" style="max-width:340px">${esc(s.config)}</td></tr>`).join("")}
-        </tbody></table>
+        </tbody></table></div></details>
         ${df.sinkTraces.length?`<h3>Sink traces — each sink back to its sources</h3>
         ${df.sinkTraces.map(t=>`<div class="mut" style="margin:.25rem 0"><span class="ref">${esc(t.sink)}</span> ← sources: <b>${t.sources.map(esc).join(", ")||"?"}</b> — path: ${t.chain.map(esc).join(" → ")}</div>`).join("")}`:""}
       </div>
@@ -947,6 +1167,16 @@ function impactOf(sel){
   }
   return {label, kind, start, down: down.objects, up: up.objects, affected, triggers};
 }
+function impactGraph(r){
+  const keep = new Set([...r.start, ...r.up.keys(), ...r.down.keys()]);
+  if(keep.size<2) return "";
+  const nodes = [...keep].filter(k=>EIDX[k]).map(k=>{ const e = EIDX[k];
+    const how = r.down.get(k) || r.up.get(k) || "confirmed";
+    return {id:k, kind:(r.start.includes(k)?"selected · ":"")+(KIND_LABEL[e.kind]||e.kind), label:e.label, sub:entWhere(e),
+      cls: r.start.includes(k) ? "n-focus" : (r.up.has(k)?"n-src":"n-snk")+(how==="possible"?" n-possible":""), go:"obj", arg:k}; });
+  const edges = DATA.lineageEdges.flatMap(e=>e.sources.flatMap(s=>e.sinks.filter(t=>keep.has(s)&&keep.has(t)).map(t=>({from:s, to:t, cls:e.opaque?"e-opaque":e.dynamic?"e-dyn":"", title:`${e.pipeline} :: ${e.activity}`}))));
+  return legend([["n-src","upstream"],["n-focus","selected"],["n-snk","downstream"],["n-possible","possible"]]) + graphSVG(nodes, edges, {label:"Impact diagram"});
+}
 const howBadge = h => h==="confirmed" ? '<span class="badge b-ok">confirmed</span>' : '<span class="badge b-warn">possible</span>';
 function rImpact(){
   const options = [
@@ -969,6 +1199,7 @@ function rImpact(){
         `<p>${go("obj", IMPACT, "Open object detail")}</p>`}</div>
     <div class="card"><div class="eyebrow">Feeds (downstream)</div>${list(r.down, entLink)}</div>
   </div>
+  ${impactGraph(r)}
   <div class="impact-grid two">
     <div class="card"><div class="eyebrow">Affected pipelines</div>${list(r.affected, pipeLink)}</div>
     <div class="card"><div class="eyebrow">Triggers that start them</div>${list(r.triggers, t=>TRIDX[t]?go("trg",t,esc(t)):esc(t))}</div>
