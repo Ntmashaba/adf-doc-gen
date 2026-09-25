@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Power BI ← Data Factory</title>
+<style>
+:root{--bg:#F5F7FB;--panel:#FFFFFF;--ink:#0F172A;--ink2:#334155;--line:#CBD5E1;--line2:#E2E8F0;--accent:#4F46E5;
+  --ok:#047857;--okBg:#D1FAE5;--warn:#B45309;--warnBg:#FEF3C7;--bad:#BE123C;--badBg:#FFE4E6;--info:#334155;--infoBg:#E2E8F0;
+  --sans:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;overflow-wrap:anywhere}
+header{background:var(--panel);border-bottom:1px solid var(--line);padding:18px max(4vw,20px)}
+header h1{margin:2px 0 6px;font-size:clamp(22px,3vw,30px)}header p{margin:0;color:var(--ink2);max-width:860px}
+main{padding:20px max(4vw,20px) 60px;max-width:1300px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+input[type=search]{flex:1;min-width:220px;max-width:520px;padding:.55rem .7rem;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--panel)}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:.3rem .8rem;font:inherit;font-size:.85rem;cursor:pointer;color:var(--ink)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:.88rem}
+th,td{text-align:left;padding:.55rem .7rem;border-bottom:1px solid var(--line2);vertical-align:top}
+th{background:#E9EEF5;color:var(--ink2);font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}
+.table-wrap{overflow-x:auto}
+.mut{color:var(--ink2);font-size:.85rem}
+.badge{display:inline-block;font-size:.75rem;font-weight:600;padding:.08rem .5rem;border-radius:999px;white-space:nowrap}
+.b-exact{background:var(--okBg);color:var(--ok)}.b-possible{background:var(--warnBg);color:var(--warn)}
+.b-none{background:var(--infoBg);color:var(--info)}.b-read{background:var(--infoBg);color:var(--info)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.stats{display:flex;flex-wrap:wrap;gap:10px}
+.stats .card{margin:0;min-width:150px}.stats b{font-size:1.4rem;display:block}
+</style>
+</head>
+<body>
+<header><small class="mut">Power BI ← Azure Data Factory</small><h1>Where Power BI data comes from</h1>
+<p>Each Power BI source (from pbi-doc-gen) matched to the Data Factory pipelines that write it (from adf-doc-gen). <b>Exact</b>: same server, database and object. <b>Possible</b>: the names match but the location is not proven, or the pipeline's target is resolved at runtime or hidden in code. <b>Read only</b>: factories read it but none writes it. <b>No match</b>: nothing in the supplied factories touches it. Views and procedures are matched by their own name only; this page does not claim the tables underneath them.</p></header>
+<main id="main"></main>
+<script>
+const BRIDGE = /*__BRIDGE__*/null;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let FILTER = "all", Q = "";
+const LABEL = {exact:"exact", possible:"possible", "read only":"read only", none:"no match"};
+const CLS = {exact:"b-exact", possible:"b-possible", "read only":"b-read", none:"b-none"};
+function render(){
+  const rows = BRIDGE.rows;
+  const n = m => rows.filter(r=>r.match===m).length;
+  const shown = rows.filter(r=>(FILTER==="all"||r.match===FILTER) &&
+    (!Q || [r.report,r.table,r.server,r.database,r.object,...r.producers.map(p=>p.pipeline+" "+p.factory)].join(" ").toLowerCase().includes(Q)));
+  document.getElementById("main").innerHTML = `
+  <div class="stats">${[["Power BI sources",rows.length],["Exact",n("exact")],["Possible",n("possible")],["Read only",n("read only")],["No match",n("none")],["Factories",BRIDGE.factories.length]]
+    .map(([l,v])=>`<div class="card"><b>${v}</b><span class="mut">${l}</span></div>`).join("")}</div>
+  <div class="tools" style="margin-top:14px"><input type="search" id="q" placeholder="Search reports, tables, servers, pipelines" aria-label="Search" value="${esc(Q)}">
+    ${["all","exact","possible","read only","none"].map(f=>`<button class="chip ${FILTER===f?"on":""}" data-f="${f}">${f==="all"?"all":LABEL[f]}</button>`).join("")}</div>
+  <div class="table-wrap"><table><thead><tr><th>Power BI report › table</th><th>Source</th><th>Match</th><th>Written by (factory › pipeline :: activity)</th></tr></thead><tbody>
+  ${shown.map(r=>`<tr><td><b>${esc(r.report)}</b><div class="mut">${esc(r.table)}</div></td>
+    <td>${esc(r.sourceType)}<div class="mut">${esc([r.server,r.database,r.object].filter(Boolean).join(" / "))}</div></td>
+    <td><span class="badge ${CLS[r.match]}">${LABEL[r.match]}</span></td>
+    <td>${r.producers.map(p=>`<div><span class="badge ${CLS[p.level]}">${p.level}</span> ${esc(p.factory)} › <b>${esc(p.pipeline)}</b> :: ${esc(p.activity)}
+      <div class="mut">writes ${esc(p.object)}${p.via!=="table"?` (matched via ${esc(p.via)})`:""}${p.triggers.length?` · started by ${p.triggers.map(esc).join(", ")}`:""}</div></div>`).join("")
+      || (r.alsoReadBy.length?`<span class="mut">Read by ${[...new Set(r.alsoReadBy.map(c=>c.factory+" › "+c.pipeline))].map(esc).join(", ")}</span>`:'<span class="mut">—</span>')}</td></tr>`).join("")
+    || '<tr><td colspan="4" class="mut">Nothing matches.</td></tr>'}
+  </tbody></table></div>`;
+  const q = document.getElementById("q");
+  q.addEventListener("input", ()=>{ Q = q.value.trim().toLowerCase(); const pos=q.selectionStart; render(); const n2=document.getElementById("q"); n2.focus(); n2.setSelectionRange(pos,pos); });
+  document.querySelectorAll("[data-f]").forEach(b=>b.addEventListener("click", ()=>{ FILTER=b.dataset.f; render(); }));
+}
+render();
+</script>
+</body>
+</html>

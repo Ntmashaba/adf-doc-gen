@@ -70,7 +70,11 @@ as the whole factory: other pipelines may use the same objects.
 ## Running
 
 ```
-python generate_docs.py <input> [-o out.html] [--title "..."] [--json] [--word]
+python generate_docs.py <input> [-o out.html] [--title "..."] [--json] [--word] [--agent]
+                        [--csv [FOLDER]] [--details details.json]
+python generate_docs.py --batch <folder> [--output-dir FOLDER] [--json] [--word] [--agent] [--csv]
+python generate_docs.py --hub <folder of generated HTML>
+python generate_docs.py --bridge <adf docs> <pbi-doc-gen docs> [-o bridge.html]
 ```
 
 | Argument | Meaning |
@@ -81,36 +85,86 @@ python generate_docs.py <input> [-o out.html] [--title "..."] [--json] [--word]
 | `--json` | also write the consolidated JSON payload next to the HTML |
 | `--word` | also write a narrative Word document next to the HTML |
 | `--agent` | also write an agent context document (`.agent.md`) next to the HTML |
+| `--csv [FOLDER]` | also write `objects.csv`, `usage.csv`, `edges.csv` and `issues.csv` (default folder `<output>-csv`) |
+| `--details FILE` | factory details to embed (see *Factory details* below) |
+| `--batch FOLDER` | document every factory in a folder and build the documentation home |
+| `--output-dir` | with `--batch`: where documents go (default `<FOLDER>/documentation`) |
+| `--hub FOLDER` | rebuild the documentation home from the HTML files in a folder |
+| `--bridge ADF PBI` | match Power BI sources to the pipelines that write them |
 
 Examples (`examples/contoso-sales-etl/` is a small synthetic factory in Git
 folder layout that exercises the features below):
 
 ```
-# full factory, all four outputs
-python generate_docs.py examples/contoso-sales-etl --title "Contoso Sales ETL" --json --word --agent
+# full factory, every output
+python generate_docs.py examples/contoso-sales-etl --title "Contoso Sales ETL" --json --word --agent --csv
 
 # one hand-picked pipeline
 python generate_docs.py PL_Ingest_Landing.json -o ingest_docs.html
 ```
 
-### Batch loops
+### Many factories and the documentation home (`--batch`, `--hub`)
 
-PowerShell, one document per subfolder of factories:
+Put each factory in its own subfolder (a Git repository, or an unzipped ARM
+export); ARM template files at the top level count as factories too:
 
-```powershell
-Get-ChildItem -Directory .\factories | ForEach-Object {
-  python generate_docs.py $_.FullName -o "docs\$($_.Name).html" --title $_.Name --json
-}
+```
+python generate_docs.py --batch factories
 ```
 
-bash:
+Each factory gets its own HTML (names never collide, even for `Sales ETL`
+and `sales-etl`). A factory that cannot be documented is reported and the
+batch carries on; the command exits with 1 if any failed. The folder also gets
+`adf-batch-results.json` and **`adf-home.html`**, an offline home page with:
 
-```bash
-for d in factories/*/; do
-  n=$(basename "$d")
-  python generate_docs.py "$d" -o "docs/$n.html" --title "$n" --json
-done
+* **Factories**: a card per factory with owner, environment, counts, mode and
+  review-issue counts, grouped by each factory's *Home page group* detail.
+* **Shared sources**: every server, database and storage location, and which
+  factories read or write it, so you can see who shares a source.
+* **Last batch run**: what was documented and what failed.
+
+`--hub FOLDER` rebuilds the home from whatever documents are in a folder,
+without the original JSON. It never replaces a file that is not a home page.
+
+### Factory details (owner, environment, runbook)
+
+Each document has a **Factory details** section for things the JSON cannot
+tell you: environment, owner or team, the factory resource, where its source
+lives, its runbook, a home page group and notes. Edit them in the page and use
+**Download updated HTML**, then replace the original file; or supply them
+when generating:
+
+```json
+{"environment": "Production", "owner": "Data Platform", "runbook": "https://wiki/adf-sales",
+ "sourceLocation": "https://dev.azure.com/contoso/data/_git/adf-sales (main)", "folder": "Sales"}
 ```
+
+```
+python generate_docs.py factory-repo -o sales.html --details sales-details.json
+```
+
+Regenerating over the same file keeps its details. Only these text fields are
+accepted, and anything that looks like a password, key or token is refused.
+
+### Power BI ← Data Factory (`--bridge`)
+
+With documents from both tools, `--bridge` shows, for each Power BI source,
+the Data Factory pipelines that write it and the triggers that start them:
+
+```
+python generate_docs.py --bridge adf-docs pbi-docs -o powerbi-adf-bridge.html
+```
+
+* **exact**: same server, database and object (or the same storage account and
+  path; blob and dfs endpoints of one account count as the same).
+* **possible**: the names match but the location is not proven, or the
+  pipeline's target is resolved at runtime or hidden in code.
+* **read only**: factories read the object but none of them writes it.
+* **no match**: nothing in the supplied factories touches it.
+
+Views and procedures are matched by their own name only; the page never claims
+the tables underneath a view. Native SQL queries in Power BI are read for the
+tables they name.
 
 ### The agent context document (`--agent`)
 
@@ -173,17 +227,37 @@ the tool:
 
 ## The views
 
-* **Overview**: the summary banner (sources ▸ factory ▸ sinks), counts, the
-  mode note, the coverage table, the input-completeness checklist, and every
-  external system the factory touches.
+Documents have six sections, each with one or more views:
+
+* **Overview**: the summary banner (sources ▸ factory ▸ sinks), factory
+  details, counts, the coverage table, the input-completeness checklist,
+  every external system the factory touches, how work starts and what each
+  run reads and writes, and what to review first.
+* **Data & sources**: **Objects** lists tables, files and folders first, each
+  identified by where it lives. Selecting one opens a detail panel: every
+  pipeline and activity that reads, writes, deletes or runs it, the triggers
+  that start them, its connection, the dataset file that defined it, and its
+  upstream and downstream objects. Datasets and linked services follow.
+* **Pipelines & orchestration**: the views below.
+* **Impact & dependencies**: the impact explorer and every movement edge.
+* **Review issues**: findings ranked high, medium or low, each with why it
+  matters and a next step; plus all findings and notes.
+* **Factory details**: the maintained details, how the document was
+  generated, and the file each definition came from.
+
+The views:
+
 * **Orchestration**: the factory as a tree: triggers → the pipelines they
   start → `ExecutePipeline` children → data flows. Entry points (pipelines
   nothing here invokes) are listed separately. Repeated nodes show `↺`
   instead of looping forever.
-* **Lineage**: the impact explorer ("type a table, get its full upstream and
-  downstream"), every movement edge with opaque/dynamic filters, roots
-  (external inputs) and terminals (final products). The full transitive
-  closure is behind a disclosure.
+* **Impact explorer**: pick a table, file or pipeline to see what it depends
+  on, what it feeds, which pipelines are affected and which triggers start
+  them. Each is **confirmed** (a static data movement leads there) or
+  **possible** (the path crosses a runtime-resolved target or opaque code).
+* **Movement edges**: every edge with opaque/dynamic filters, roots (external
+  inputs) and terminals (final products). The full transitive closure is
+  behind a disclosure.
 * **Pipelines**: per pipeline, a one-line role plus **effective** reads and
   writes rolled up through everything it invokes; the activity flow in
   execution order, grouped by container scope (ForEach/If/Switch/Until),
@@ -206,33 +280,33 @@ the tool:
 * **Warnings**: real warnings first; notes about the limits of static
   analysis (dynamic targets, opaque work, missing retries, error paths)
   grouped by category and collapsed.
-* **Entities**: every table, file path, procedure, notebook and endpoint,
-  with its aliases, endpoint fields, and transitive up/downstream.
+* **Objects**: described above; CSV downloads for objects, usage, edges and
+  issues are on the Objects and Review issues views.
 
 Views with nothing to show for *this input* are greyed out with a tooltip
 explaining what's missing and what that costs. Search text and open
-sections are kept when you switch views. Names containing quotes,
+sections are kept when you switch views, and each section reopens on the view
+you last used. Names containing quotes,
 backslashes or Unicode link correctly, and long identifiers wrap so pages
 fit desktop and phone widths.
 
-## The cross-tool lineage contract (future `bi-lineage-join`)
+## The payload and the cross-tool contract
 
-Every source/sink entity carries a normalised endpoint:
+Every output is rendered from one JSON payload (embedded in the HTML, or
+written with `--json`). It carries `schemaVersion` (currently 2) and a small
+`summary` block (counts, source locations, issue counts) that the home page
+reads, so the home keeps working as the detailed fields grow. Object keys are
+stable between runs of the same input.
+
+Every source/sink object carries a normalised endpoint:
 
 ```json
 {"system": …, "server": …, "database": …, "schema": …,
  "object": …, "path": …, "url": …, "container": …}
 ```
 
-with `null` for unknown and parameter/secret *names* where parameterised.
-`pbi-doc-gen` emits the mirror image per semantic-model partition. A planned
-third tool, **`bi-lineage-join`**, will take any mix of the two tools' JSON
-payloads and render the bridge: report page → semantic model table →
-partition → warehouse table → ADF activity → upstream source. That join will
-be **confidence-tiered and honest about loose ends** (server aliases,
-views-over-tables, and opaque hops make an exact join impossible), which is
-exactly why both tools persist the raw normalised fields rather than a
-pre-computed match.
+with `null` for unknown. `pbi-doc-gen` emits the mirror image per semantic
+model source, which is what `--bridge` joins on.
 
 ## Reading the verdicts: caveats that matter
 
@@ -270,7 +344,9 @@ pre-computed match.
 python -m unittest discover tests
 ```
 
-The unit tests cover the guarantees above with small synthetic factories:
+The unit tests cover the guarantees above with small synthetic factories
+(plus batch runs, the home page, factory details, CSV output and the Power BI
+bridge):
 secrets absent from all four outputs, same-named objects on different
 servers, query sources, tumbling-window triggers, coverage and modes, shared
 data flows, parameterised datasets, and the SQL reader. `tests/test_example.py`
@@ -297,6 +373,9 @@ adfdocgen/
   loader.py               input collection, classification, ARM parameters
   redact.py               secret removal for definitions and outputs
   sql_harvest.py          token-based SQL reader (reads, writes, procedures)
+  details.py              maintained factory details (validation, carry-over)
+  hub.py, hub.html        the documentation home (adf-home.html)
+  bridge.py, bridge.html  Power BI ← Data Factory matching
   analyzer.py             all analysis (the single source of truth)
   renderer.py             payload assembly + HTML injection
   template.html           the self-contained interactive page

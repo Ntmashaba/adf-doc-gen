@@ -95,6 +95,9 @@ def document(in_path: Path, out_html: Path, title: str, *, json_out=False, word=
 
     say("Analyzing …")
     payload = build_payload(analyze(store), title)
+    if details is None and out_html.exists():
+        from adfdocgen.details import read_details
+        details = read_details(out_html.read_text(encoding="utf-8-sig"))
     if details is not None:
         payload["details"] = details
     f = payload["factory"]
@@ -215,8 +218,17 @@ def main(argv=None) -> int:
                     help="with --batch: where documents go (default: <FOLDER>/documentation)")
     ap.add_argument("--hub", metavar="FOLDER",
                     help="rebuild the documentation home (adf-home.html) from the HTML files in a folder")
+    ap.add_argument("--bridge", nargs=2, metavar=("ADF_DOCS", "PBI_DOCS"),
+                    help="match Power BI sources (pbi-doc-gen HTML/JSON) to the Data Factory "
+                         "pipelines that write them (adf-doc-gen HTML/JSON); writes -o or "
+                         "powerbi-adf-bridge.html")
     args = ap.parse_args(argv)
 
+    if args.bridge:
+        from adfdocgen.bridge import build_bridge
+        out = build_bridge(args.bridge[0], args.bridge[1], args.output or "powerbi-adf-bridge.html")
+        print(f"wrote {out}")
+        return 0
     if args.hub:
         from adfdocgen.hub import build_hub
         print(f"wrote {build_hub(args.hub)}")

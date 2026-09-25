@@ -291,6 +291,10 @@ def build_docx_body(payload: dict) -> str:
     parts.append(para(run("What this document can claim.  ", bold=True)
                       + run(_MODE_NOTES[mode]), shade=GREY_HDR, space_after=240))
 
+    det = [[k, v] for k, v in (payload.get("details") or {}).items() if v]
+    if det:
+        parts.append(heading("Factory details", 1))
+        parts.append(table(["Detail", "Value"], det))
     cov = payload.get("coverage") or {}
     if cov:
         parts.append(heading("What this document can and cannot see", 1))
