@@ -1,0 +1,25 @@
+{
+  "name": "DS_Lake_Landing",
+  "properties": {
+    "type": "Parquet",
+    "linkedServiceName": {
+      "referenceName": "LS_Lake",
+      "type": "LinkedServiceReference"
+    },
+    "parameters": {
+      "entity": {
+        "type": "string"
+      }
+    },
+    "typeProperties": {
+      "location": {
+        "type": "AzureBlobFSLocation",
+        "fileSystem": "landing",
+        "folderPath": {
+          "value": "sales/@{dataset().entity}",
+          "type": "Expression"
+        }
+      }
+    }
+  }
+}

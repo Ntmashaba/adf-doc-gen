@@ -1,0 +1,14 @@
+{
+  "name": "DS_SalesDW_FactSales",
+  "properties": {
+    "type": "AzureSqlTable",
+    "linkedServiceName": {
+      "referenceName": "LS_SalesDW",
+      "type": "LinkedServiceReference"
+    },
+    "typeProperties": {
+      "schema": "dbo",
+      "table": "FactSales"
+    }
+  }
+}

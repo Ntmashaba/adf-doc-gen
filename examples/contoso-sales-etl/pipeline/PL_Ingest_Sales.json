@@ -1,0 +1,138 @@
+{
+  "name": "PL_Ingest_Sales",
+  "properties": {
+    "description": "Lands orders and customers from SalesDW into the lake.",
+    "folder": {
+      "name": "Ingest"
+    },
+    "parameters": {
+      "entity_list": {
+        "type": "array",
+        "defaultValue": [
+          "Orders",
+          "Customers"
+        ]
+      }
+    },
+    "activities": [
+      {
+        "name": "Get watermark",
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "AzureSqlSource",
+            "sqlReaderQuery": "SELECT MAX(loaded_at) AS wm FROM etl.Watermark WHERE entity = 'sales'"
+          },
+          "dataset": {
+            "referenceName": "DS_Sql_Generic",
+            "type": "DatasetReference",
+            "parameters": {
+              "table": "Watermark"
+            }
+          }
+        }
+      },
+      {
+        "name": "Land orders",
+        "type": "Copy",
+        "dependsOn": [
+          {
+            "activity": "Get watermark",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "retry": 2
+        },
+        "inputs": [
+          {
+            "referenceName": "DS_Sql_Generic",
+            "type": "DatasetReference",
+            "parameters": {
+              "table": "Orders"
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "DS_Lake_Landing",
+            "type": "DatasetReference",
+            "parameters": {
+              "entity": "orders"
+            }
+          }
+        ],
+        "typeProperties": {
+          "source": {
+            "type": "AzureSqlSource",
+            "sqlReaderQuery": "WITH recent AS (SELECT * FROM sales.Orders o WHERE o.modified_at > '@{activity('Get watermark').output.firstRow.wm}')\nSELECT r.*, s.region FROM recent r JOIN ref.Store s ON s.id = r.store_id"
+          },
+          "sink": {
+            "type": "ParquetSink"
+          }
+        }
+      },
+      {
+        "name": "Land customers",
+        "type": "Copy",
+        "dependsOn": [
+          {
+            "activity": "Get watermark",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "inputs": [
+          {
+            "referenceName": "DS_Sql_Generic",
+            "type": "DatasetReference",
+            "parameters": {
+              "schema": "sales",
+              "table": "Customers"
+            }
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "DS_Lake_Landing",
+            "type": "DatasetReference",
+            "parameters": {
+              "entity": "customers"
+            }
+          }
+        ],
+        "typeProperties": {
+          "source": {
+            "type": "AzureSqlSource"
+          },
+          "sink": {
+            "type": "ParquetSink"
+          }
+        }
+      },
+      {
+        "name": "Notify on failure",
+        "type": "WebActivity",
+        "dependsOn": [
+          {
+            "activity": "Land orders",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ],
+        "typeProperties": {
+          "method": "POST",
+          "url": "https://hooks.contoso.example/etl?code=example-not-a-real-key",
+          "body": {
+            "value": "@concat('Ingest failed: ', pipeline().RunId)",
+            "type": "Expression"
+          }
+        }
+      }
+    ]
+  }
+}

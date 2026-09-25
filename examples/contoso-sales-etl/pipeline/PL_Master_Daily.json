@@ -1,0 +1,77 @@
+{
+  "name": "PL_Master_Daily",
+  "properties": {
+    "description": "Daily orchestration: ingest, then transform.",
+    "activities": [
+      {
+        "name": "Ingest",
+        "type": "ExecutePipeline",
+        "typeProperties": {
+          "pipeline": {
+            "referenceName": "PL_Ingest_Sales",
+            "type": "PipelineReference"
+          },
+          "waitOnCompletion": true
+        }
+      },
+      {
+        "name": "Transform",
+        "type": "ExecutePipeline",
+        "dependsOn": [
+          {
+            "activity": "Ingest",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "typeProperties": {
+          "pipeline": {
+            "referenceName": "PL_Transform_Sales",
+            "type": "PipelineReference"
+          },
+          "waitOnCompletion": true
+        }
+      },
+      {
+        "name": "Sync shop",
+        "type": "Copy",
+        "dependsOn": [
+          {
+            "activity": "Transform",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "inputs": [
+          {
+            "referenceName": "DS_Lake_Curated",
+            "type": "DatasetReference"
+          }
+        ],
+        "outputs": [
+          {
+            "referenceName": "DS_Sql_Generic",
+            "type": "DatasetReference",
+            "parameters": {
+              "schema": "shop",
+              "table": {
+                "value": "@pipeline().parameters.target",
+                "type": "Expression"
+              }
+            }
+          }
+        ],
+        "typeProperties": {
+          "source": {
+            "type": "ParquetSource"
+          },
+          "sink": {
+            "type": "AzureSqlSink"
+          }
+        }
+      }
+    ]
+  }
+}

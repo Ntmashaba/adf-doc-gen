@@ -1,0 +1,22 @@
+{
+  "name": "TR_Hourly_Window",
+  "properties": {
+    "type": "TumblingWindowTrigger",
+    "runtimeState": "Stopped",
+    "pipeline": {
+      "pipelineReference": {
+        "referenceName": "PL_Ingest_Sales",
+        "type": "PipelineReference"
+      },
+      "parameters": {
+        "window_start": "@trigger().outputs.windowStartTime"
+      }
+    },
+    "typeProperties": {
+      "frequency": "Hour",
+      "interval": 1,
+      "startTime": "2026-01-01T00:00:00Z",
+      "maxConcurrency": 1
+    }
+  }
+}

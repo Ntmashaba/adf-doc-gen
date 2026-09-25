@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="adf-documentation-hub" content="1">
+<title>Data Factory documentation</title>
+<style>
+:root{--bg:#F5F7FB;--panel:#FFFFFF;--panel2:#F1F4F9;--ink:#0F172A;--ink2:#334155;--line:#CBD5E1;--line2:#E2E8F0;
+  --accent:#4F46E5;--accentSoft:#EEF2FF;--ok:#047857;--okBg:#D1FAE5;--warn:#B45309;--warnBg:#FEF3C7;--bad:#BE123C;--badBg:#FFE4E6;
+  --src:#0F766E;--srcBg:#CCFBF1;--snk:#B45309;--snkBg:#FEF3C7;--info:#334155;--infoBg:#E2E8F0;
+  --sans:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;overflow-wrap:anywhere}
+.shell{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:100vh}
+nav{background:#0F172A;color:#fff;padding:26px 16px;position:sticky;top:0;height:100vh}
+.brand{font-weight:650;font-size:17px;margin:0 10px 28px}
+nav button{display:block;width:100%;text-align:left;border:0;background:none;color:#CBD5E1;font:inherit;padding:10px 12px;border-radius:8px;margin:3px 0;cursor:pointer}
+nav button:hover{background:#1E293B;color:#fff}
+nav button[aria-current=page]{background:#1E293B;color:#fff;box-shadow:inset 3px 0 #818CF8}
+nav button:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #A5B4FC;outline-offset:2px}
+header{background:var(--panel);border-bottom:1px solid var(--line);padding:18px max(4vw,20px)}
+header h1{margin:2px 0 4px;font-size:clamp(22px,3vw,30px)}header p{margin:0;color:var(--ink2);max-width:760px}
+main{padding:20px max(4vw,20px) 60px;max-width:1300px}
+input[type=search]{width:100%;max-width:520px;padding:.55rem .7rem;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--panel)}
+.group{margin:22px 0 8px;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px #0f172a0d,0 4px 12px #0f172a0a}
+.card h2{margin:0 0 4px;font-size:1.05rem}.card a{color:var(--accent)}
+.mut{color:var(--ink2);font-size:.85rem}
+.badge{display:inline-block;font-size:.75rem;font-weight:600;padding:.08rem .5rem;border-radius:999px;margin:2px 2px 0 0;white-space:nowrap}
+.b-ok{background:var(--okBg);color:var(--ok)}.b-warn{background:var(--warnBg);color:var(--warn)}.b-bad{background:var(--badBg);color:var(--bad)}
+.b-info{background:var(--infoBg);color:var(--info)}.b-src{background:var(--srcBg);color:var(--src)}.b-snk{background:var(--snkBg);color:var(--snk)}
+.stats{display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 0;font-size:.85rem;color:var(--ink2)}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:.88rem}
+th,td{text-align:left;padding:.5rem .7rem;border-bottom:1px solid var(--line2);vertical-align:top}
+th{background:#E9EEF5;color:var(--ink2);font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}
+.table-wrap{overflow-x:auto}
+.where-col{min-width:200px;max-width:300px}
+.empty{border:1.5px dashed var(--line);border-radius:12px;padding:2rem;text-align:center;color:var(--ink2)}
+[hidden]{display:none!important}
+@media(max-width:800px){.shell{grid-template-columns:1fr}nav{position:static;height:auto;display:flex;flex-wrap:wrap;gap:4px}.brand{width:100%;margin-bottom:8px}nav button{width:auto}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav aria-label="Documentation home"><div class="brand">Data Factory docs</div>
+  <button data-view="factories" aria-current="page">Factories</button>
+  <button data-view="sources">Shared sources</button>
+  <button data-view="runs">Last batch run</button>
+</nav>
+<div>
+<header><small class="mut">Azure Data Factory documentation</small><h1 id="title">Factories</h1>
+<p id="lead">Every factory documented in this folder. Open one for its full documentation, or search across owners, servers and databases.</p></header>
+<main id="main"></main>
+</div></div>
+<script>
+const FACTORIES = /*__FACTORIES__*/[];
+const BATCH = /*__BATCH__*/null;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let VIEW = "factories", Q = "";
+const MODE = {factory:["b-ok","complete factory"], selection:["b-info","selected objects"], partial:["b-bad","partial input"]};
+function hay(f){ return [f.title, f.file, ...Object.values(f.details||{}), ...(f.sources||[]).flatMap(s=>[s.system,s.server,s.database,...s.objects])].join(" ").toLowerCase(); }
+function card(f){
+  if(f.error) return `<div class="card"><h2>${esc(f.title)}</h2><span class="badge b-bad">unreadable</span><p class="mut">${esc(f.error)}</p></div>`;
+  const d = f.details||{}, c = f.counts||{}, i = f.issues||{}, m = MODE[f.mode]||["b-info",f.mode];
+  const who = [d.environment, d.owner].filter(Boolean).join(" · ");
+  return `<div class="card"><h2><a href="${f.href}">${esc(f.title)}</a></h2>
+    ${who?`<div>${esc(who)}</div>`:`<div class="mut">No owner recorded</div>`}
+    <div class="stats"><span>${c.pipelines} pipelines</span><span>${c.activities} activities</span><span>${c.dataflows} data flows</span><span>${c.triggers} triggers</span></div>
+    <span class="badge ${m[0]}">${esc(m[1])}</span>
+    ${i.high?`<span class="badge b-bad">${i.high} high</span>`:""}${i.medium?`<span class="badge b-warn">${i.medium} medium</span>`:""}${i.low?`<span class="badge b-info">${i.low} low</span>`:""}
+    ${f.unresolved?`<span class="badge b-bad">${f.unresolved} missing</span>`:""}
+    <p class="mut" style="margin:.5rem 0 0">${(f.sources||[]).length} source/destination location(s) · generated ${esc(f.generated)}</p>
+    ${d.runbook?`<p class="mut" style="margin:.2rem 0 0">Runbook: ${esc(d.runbook)}</p>`:""}</div>`;
+}
+function rFactories(){
+  const shown = FACTORIES.filter(f=>!Q||hay(f).includes(Q));
+  if(!FACTORIES.length) return `<div class="empty"><b>No factory documents found in this folder.</b><br>Generate some with <code>python generate_docs.py --batch &lt;folder&gt;</code>.</div>`;
+  const groups = {};
+  for(const f of shown){ const g = (f.details&&f.details.folder)||"Ungrouped"; (groups[g]=groups[g]||[]).push(f); }
+  const names = Object.keys(groups).sort((a,b)=>(a==="Ungrouped")-(b==="Ungrouped")||a.localeCompare(b));
+  return search("Search factories, owners, servers, databases or tables")
+    + (names.length ? names.map(g=>`<div class="group">${esc(g)} (${groups[g].length})</div><div class="cards">${groups[g].map(card).join("")}</div>`).join("")
+                    : `<p class="mut">No factory matches.</p>`);
+}
+function rSources(){
+  // Group by where the data lives; show which factories read or write each location.
+  const loc = {};
+  for(const f of FACTORIES) for(const s of f.sources||[]){
+    const k = [s.system, s.host||s.server, (s.database||"").toLowerCase()].join("|");
+    const row = loc[k] = loc[k] || {system:s.system, server:s.server, database:s.database, factories:[], objects:new Set()};
+    row.factories.push({f, read:s.read, written:s.written});
+    s.objects.forEach(o=>row.objects.add(o));
+  }
+  const rows = Object.values(loc).filter(r=>!Q||[r.system,r.server,r.database,...r.objects,...r.factories.map(x=>x.f.title)].join(" ").toLowerCase().includes(Q))
+    .sort((a,b)=>b.factories.length-a.factories.length||a.system.localeCompare(b.system));
+  return search("Search servers, databases, containers or objects")
+    + `<p class="mut">Locations are matched on system, server or account (ignoring port and scheme) and database or container. The same name on different servers is listed separately.</p>`
+    + (rows.length?`<div class="table-wrap"><table><thead><tr><th>Where</th><th>Factories</th><th>Objects</th></tr></thead><tbody>${rows.map(r=>`<tr>
+      <td class="where-col"><b>${esc(r.system||"Unknown system")}</b><div class="mut">${esc([r.server,r.database].filter(Boolean).join(" / ")||"location not stated")}</div></td>
+      <td>${r.factories.map(x=>`<div><a href="${x.f.href}">${esc(x.f.title)}</a> ${x.read?`<span class="badge b-src">reads ${x.read}</span>`:""}${x.written?`<span class="badge b-snk">writes ${x.written}</span>`:""}</div>`).join("")}</td>
+      <td class="mut">${[...r.objects].slice(0,12).map(esc).join(", ")}${r.objects.size>12?` … +${r.objects.size-12}`:""}</td></tr>`).join("")}</tbody></table></div>`
+      :`<p class="mut">No sources match.</p>`);
+}
+function rRuns(){
+  if(!BATCH) return `<div class="empty"><b>No batch results in this folder.</b><br>This page lists the documents it found; a batch run also records which factories failed.</div>`;
+  const rows = BATCH.factories.map(r=>`<tr><td>${esc(r.input)}</td><td>${r.status==="ok"?'<span class="badge b-ok">documented</span>':'<span class="badge b-bad">failed</span>'}</td>
+    <td>${r.output?`<a href="${encodeURIComponent(r.output)}">${esc(r.output)}</a>`:""}<div class="mut">${esc(r.error||r.mode||"")}</div></td></tr>`).join("");
+  const failed = BATCH.factories.filter(r=>r.status!=="ok").length;
+  return `<p>${esc(BATCH.started||"")} · ${BATCH.factories.length} input(s), ${failed?`<b>${failed} failed</b>`:"none failed"}.</p>
+  <div class="table-wrap"><table><thead><tr><th>Input</th><th>Result</th><th>Document</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function search(ph){ return `<p><input type="search" id="q" placeholder="${esc(ph)}" aria-label="${esc(ph)}" value="${esc(Q)}"></p>`; }
+const VIEWS = {factories:[rFactories,"Factories","Every factory documented in this folder. Open one for its full documentation, or search across owners, servers and databases."],
+  sources:[rSources,"Shared sources","The servers, databases and storage locations each factory reads or writes, so you can see which factories share a source."],
+  runs:[rRuns,"Last batch run","What the last batch generation produced, including any factory that could not be documented."]};
+function show(v){
+  VIEW = v; const [fn,title,lead] = VIEWS[v];
+  document.getElementById("title").textContent = title; document.getElementById("lead").textContent = lead;
+  document.querySelectorAll("nav button").forEach(b=>b.dataset.view===v?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
+  document.getElementById("main").innerHTML = fn();
+  const q = document.getElementById("q");
+  if(q){ q.addEventListener("input", ()=>{ Q = q.value.trim().toLowerCase(); const pos = q.selectionStart; show(VIEW); const n = document.getElementById("q"); n.focus(); n.setSelectionRange(pos,pos); }); }
+}
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click", ()=>show(b.dataset.view)));
+show("factories");
+</script>
+</body>
+</html>

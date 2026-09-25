@@ -1,0 +1,17 @@
+{
+  "name": "LS_SalesDW",
+  "properties": {
+    "type": "AzureSqlDatabase",
+    "typeProperties": {
+      "connectionString": "Server=tcp:contoso-sales.database.windows.net,1433;Database=SalesDW;",
+      "password": {
+        "type": "AzureKeyVaultSecret",
+        "store": {
+          "referenceName": "LS_KeyVault",
+          "type": "LinkedServiceReference"
+        },
+        "secretName": "salesdw-password"
+      }
+    }
+  }
+}

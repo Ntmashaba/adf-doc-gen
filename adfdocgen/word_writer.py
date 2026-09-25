@@ -239,8 +239,9 @@ _STYLES = ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
 
 _MODE_NOTES = {
     "factory": (
-        "Every reference between the supplied objects resolved, so orchestration, "
-        "lineage, and per-pipeline rollups below are complete within this factory. "
+        "Every reference between the supplied objects resolved and every input file "
+        "was read. Reads and writes are still unknown wherever work is opaque "
+        "(notebooks, procedures, external calls) or resolved only at runtime. "
         "All of it is design-time truth derived statically from JSON definitions: "
         "no run history exists here, parameterised connections show parameter or "
         "Key Vault secret names (never values), work delegated to notebooks, stored "
@@ -248,12 +249,19 @@ _MODE_NOTES = {
         "and a pipeline no trigger starts may still be invoked externally."
     ),
     "partial": (
-        "Some referenced objects were not supplied, so parts of this analysis are "
+        "Some referenced objects were not supplied, or some input files could not be "
+        "read, so parts of this analysis are "
         "explicitly incomplete — the Overview lists exactly which objects to export "
         "next. Everything stated is design-time truth derived statically from JSON "
         "definitions: no run history, parameter and secret names never values, "
         "opaque hops marked rather than guessed at, and external invocation "
         "invisible."
+    ),
+    "selection": (
+        "These are individually exported objects. Every reference between them "
+        "resolved, but a selection cannot show that the whole factory was supplied: "
+        "other pipelines may use the same objects. Everything stated is design-time "
+        "truth derived statically from JSON definitions."
     ),
 }
 
@@ -282,6 +290,24 @@ def build_docx_body(payload: dict) -> str:
         style="Subtitle"))
     parts.append(para(run("What this document can claim.  ", bold=True)
                       + run(_MODE_NOTES[mode]), shade=GREY_HDR, space_after=240))
+
+    det = [[k, v] for k, v in (payload.get("details") or {}).items() if v]
+    if det:
+        parts.append(heading("Factory details", 1))
+        parts.append(table(["Detail", "Value"], det))
+    cov = payload.get("coverage") or {}
+    if cov:
+        parts.append(heading("What this document can and cannot see", 1))
+        parts.append(table(["Check", "Result"], [
+            ["Input", _join(cov.get("inputFormats", []))],
+            ["Unreadable files", cov.get("skippedFiles", 0)],
+            ["Missing references", cov.get("unresolvedReferences", 0)],
+            ["Opaque activities", f"{cov.get('opaqueActivities', 0)} of {cov.get('activities', 0)}"],
+            ["Resolved at runtime", cov.get("dynamicActivities", 0)],
+            ["Unknown footprint", cov.get("unknownFootprints", 0)],
+            ["Secret values withheld", payload.get("redactions", 0)],
+            ["Run history", "not available"],
+        ]))
 
     # ---- overview --------------------------------------------------------
     parts.append(heading("Overview", 1))

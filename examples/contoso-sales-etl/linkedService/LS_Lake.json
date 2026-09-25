@@ -1,0 +1,9 @@
+{
+  "name": "LS_Lake",
+  "properties": {
+    "type": "AzureBlobFS",
+    "typeProperties": {
+      "url": "https://contosolake.dfs.core.windows.net"
+    }
+  }
+}

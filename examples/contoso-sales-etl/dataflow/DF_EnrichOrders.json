@@ -1,0 +1,46 @@
+{
+  "name": "DF_EnrichOrders",
+  "properties": {
+    "type": "MappingDataFlow",
+    "typeProperties": {
+      "sources": [
+        {
+          "name": "orders",
+          "dataset": {
+            "referenceName": "DS_Lake_Landing",
+            "type": "DatasetReference",
+            "parameters": {
+              "entity": "orders"
+            }
+          }
+        },
+        {
+          "name": "customers",
+          "dataset": {
+            "referenceName": "DS_Lake_Landing",
+            "type": "DatasetReference",
+            "parameters": {
+              "entity": "customers"
+            }
+          }
+        }
+      ],
+      "sinks": [
+        {
+          "name": "curated",
+          "dataset": {
+            "referenceName": "DS_Lake_Curated",
+            "type": "DatasetReference"
+          }
+        }
+      ],
+      "scriptLines": [
+        "source(allowSchemaDrift: true) ~> orders",
+        "source(allowSchemaDrift: true) ~> customers",
+        "orders, customers join(orders@customer_id == customers@id, joinType:'left') ~> joined",
+        "joined derive(order_year = year(order_date)) ~> withYear",
+        "withYear sink(allowSchemaDrift: true) ~> curated"
+      ]
+    }
+  }
+}

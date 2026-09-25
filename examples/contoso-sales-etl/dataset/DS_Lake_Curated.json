@@ -1,0 +1,17 @@
+{
+  "name": "DS_Lake_Curated",
+  "properties": {
+    "type": "Parquet",
+    "linkedServiceName": {
+      "referenceName": "LS_Lake",
+      "type": "LinkedServiceReference"
+    },
+    "typeProperties": {
+      "location": {
+        "type": "AzureBlobFSLocation",
+        "fileSystem": "curated",
+        "folderPath": "sales/orders_enriched"
+      }
+    }
+  }
+}

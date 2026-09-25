@@ -1,0 +1,10 @@
+{
+  "name": "LS_ShopApi",
+  "properties": {
+    "type": "RestService",
+    "typeProperties": {
+      "url": "https://api.contoso-shop.example/v2",
+      "authenticationType": "Anonymous"
+    }
+  }
+}

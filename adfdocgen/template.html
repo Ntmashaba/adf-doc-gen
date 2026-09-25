@@ -129,6 +129,137 @@ details>.body{padding:.2rem .9rem .9rem;border-top:1px solid var(--line2)}
 .dot{width:9px;height:9px;border-radius:2px;display:inline-block}
 @media (max-width:860px){.layout{grid-template-columns:1fr}nav{position:static;height:auto;display:flex;flex-wrap:wrap;gap:.2rem;border-right:0;border-bottom:1px solid var(--line)}.doc-title,.brand,.nav-group{width:100%}main{padding:1rem}.conveyor{flex-direction:column}.conveyor .joint{width:auto;height:22px;border:1.5px solid var(--ink);border-top:0;border-bottom:0}.conveyor .cell:first-child{border-radius:8px 8px 0 0;border-right-width:1.5px}.conveyor .cell:last-child{border-radius:0 0 8px 8px;border-left-width:1.5px}}
 @media print{nav{display:none}.layout{grid-template-columns:1fr}}
+/* Modern palette shared with pbi-doc-gen: slate neutrals, indigo accent.
+   Every text/background pair below meets WCAG AA (4.5:1). */
+:root{
+  --bg:#F5F7FB; --panel:#FFFFFF; --panel2:#F1F4F9;
+  --ink:#0F172A; --ink2:#334155; --ink3:#475569;
+  --line:#CBD5E1; --line2:#E2E8F0;
+  --accent:#4F46E5; --accentSoft:#EEF2FF;
+  --src:#0F766E; --srcBg:#CCFBF1; --read:#0F766E; --readBg:#CCFBF1;
+  --snk:#B45309; --snkBg:#FEF3C7; --move:#B45309; --moveBg:#FEF3C7;
+  --xform:#4338CA; --xformBg:#E0E7FF;
+  --orch:#1E293B; --orchBg:#E2E8F0;
+  --ctl:#475569; --ctlBg:#E2E8F0;
+  --ext:#6D28D9; --extBg:#EDE9FE;
+  --mgmt:#92400E; --mgmtBg:#FEF3C7;
+  --ok:#047857; --okBg:#D1FAE5;
+  --warn:#B45309; --warnBg:#FEF3C7;
+  --bad:#BE123C; --badBg:#FFE4E6;
+  --info:#334155; --infoBg:#E2E8F0;
+}
+a,.xl{color:var(--accent)}
+nav{background:#0F172A;border-right:0}
+.brand,.nav-group{color:#94A3B8}
+.doc-title{color:#fff}
+.nav-btn{color:#CBD5E1}.nav-btn:hover{background:#1E293B;color:#fff}
+.nav-btn.active{background:#1E293B;color:#fff;box-shadow:inset 3px 0 0 #818CF8}
+.nav-btn .n{opacity:.85}
+.nav-btn.disabled{opacity:.55}
+.nav-btn:focus-visible{outline-color:#A5B4FC}
+main{min-width:0}
+.card,table.t,details{border-radius:12px}
+.card{box-shadow:0 1px 2px #0f172a0d,0 4px 12px #0f172a0a}
+table.t th{color:var(--ink2);background:#E9EEF5;letter-spacing:.04em;font-size:.7rem}
+table.t td,.ref,.mut,.tnode,details>summary,.kv>div{overflow-wrap:anywhere}
+table.t{table-layout:auto}
+.badge{border-radius:999px;padding:.12rem .55rem}
+.pill-list .badge,.badge.wrap{white-space:normal;overflow-wrap:anywhere;text-align:left}
+.chip{border-radius:999px;color:var(--ink)}
+.chip.on{background:var(--accent);border-color:var(--accent)}
+.hl{background:#E0E7FF!important}
+.eyebrow,.stat .lbl,.legend,.scopehdr{color:var(--ink2)}
+.act .kv .k,.act.kv .k{color:var(--ink2);font-family:var(--sans);text-transform:none;letter-spacing:0;font-size:.8rem}
+.conveyor .cell.mid{background:#1E293B;border-color:#1E293B}
+.conveyor .cell{border-color:#1E293B}
+.conveyor .joint{background:var(--accentSoft);color:var(--accent);border-color:#1E293B}
+.conveyor .tag{color:var(--ink2)} .conveyor .cell.mid .tag,.conveyor .cell.mid .sub{color:#CBD5E1}
+.search:focus,.xl:focus-visible{outline-color:var(--accent)}
+.table-wrap{overflow-x:auto;max-width:100%}
+.where{color:var(--ink2);font-size:.78em;margin-left:.3em}
+p,h1,h2,h3,li{overflow-wrap:anywhere}
+.graph{overflow:auto;max-height:75vh;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px;margin:.4rem 0 1rem}
+.graph.small{max-height:50vh}
+.graph svg{display:block;font-family:var(--sans)}
+.g-col{font-size:11px;fill:var(--ink2);text-transform:uppercase;letter-spacing:.06em}
+.g-node rect{fill:#fff;stroke:#94A3B8;stroke-width:1.2}
+.g-node .g-kind{font-size:10px;fill:var(--ink2);text-transform:uppercase;letter-spacing:.05em}
+.g-node .g-label{font-size:13px;font-weight:600;fill:var(--ink)}
+.g-node .g-sub{font-size:10.5px;fill:var(--ink2)}
+.g-node[data-go]{cursor:pointer}
+.g-node[data-go]:hover rect,.g-node:focus rect{stroke:var(--accent);stroke-width:2}
+.g-node:focus{outline:none}.g-node:focus rect{stroke-width:2.5}
+.g-edge{fill:none;stroke:#94A3B8;stroke-width:1.5}
+.g-arrow{fill:#94A3B8}
+.g-dim .g-node{opacity:.35}.g-dim .g-edge{opacity:.15}
+.g-dim .g-node.g-hot{opacity:1}.g-dim .g-edge.g-hot{opacity:1;stroke:var(--accent);stroke-width:2.2}
+.n-trigger rect{fill:#E2E8F0;stroke:#475569}
+.n-pipeline rect{fill:#EEF2FF;stroke:#6366F1}
+.n-dataflow rect{fill:#EDE9FE;stroke:#7C3AED}
+.n-missing rect{fill:#FFE4E6;stroke:#BE123C;stroke-dasharray:5 3}
+.n-stopped rect{stroke-dasharray:5 3;fill:#F8FAFC}
+.n-src rect{fill:#CCFBF1;stroke:#0F766E}.n-snk rect{fill:#FEF3C7;stroke:#B45309}
+.n-mid rect{fill:#fff;stroke:#64748B}.n-xform rect{fill:#E0E7FF;stroke:#4338CA}
+.n-code rect{fill:#EDE9FE;stroke:#6D28D9}
+.n-focus rect{fill:#4F46E5;stroke:#312E81}.n-focus .g-label,.n-focus .g-kind,.n-focus .g-sub{fill:#fff}
+.n-possible rect{stroke-dasharray:5 3}
+.n-dead rect{stroke:#BE123C;stroke-width:2}
+.n-cat-movement rect{fill:#FEF3C7;stroke:#B45309}.n-cat-transform rect{fill:#E0E7FF;stroke:#4338CA}
+.n-cat-orchestration rect{fill:#EEF2FF;stroke:#6366F1}.n-cat-read rect{fill:#CCFBF1;stroke:#0F766E}
+.n-cat-control rect{fill:#F1F5F9;stroke:#64748B}.n-cat-external rect{fill:#EDE9FE;stroke:#6D28D9}
+.n-cat-management rect{fill:#FFE4E6;stroke:#BE123C}.n-cat-other rect{fill:#fff;stroke:#94A3B8}
+.e-trigger{stroke:#475569}.e-stopped{stroke:#94A3B8;stroke-dasharray:4 4}.e-df{stroke:#7C3AED}.e-async{stroke-dasharray:6 4}
+.e-ok{stroke:#047857}.e-fail{stroke:#BE123C}.e-done{stroke:#475569;stroke-dasharray:6 3}.e-skip{stroke:#B45309;stroke-dasharray:2 3}
+.e-dyn{stroke:#B45309;stroke-dasharray:6 3}.e-opaque{stroke:#64748B;stroke-dasharray:2 3}
+.legend{display:flex;flex-wrap:wrap;gap:.35rem 1rem;font-size:.8rem;color:var(--ink2);margin:.3rem 0}
+.legend span{display:inline-flex;align-items:center;gap:.35rem}
+.lg{display:inline-block;width:14px;height:10px;border-radius:3px;border:1.5px solid #94A3B8;background:#fff}
+.lg.n-trigger{background:#E2E8F0;border-color:#475569}.lg.n-pipeline{background:#EEF2FF;border-color:#6366F1}
+.lg.n-dataflow{background:#EDE9FE;border-color:#7C3AED}.lg.n-missing{background:#FFE4E6;border-color:#BE123C;border-style:dashed}
+.lg.n-src{background:#CCFBF1;border-color:#0F766E}.lg.n-snk{background:#FEF3C7;border-color:#B45309}
+.lg.n-mid{border-color:#64748B}.lg.n-xform{background:#E0E7FF;border-color:#4338CA}.lg.n-code{background:#EDE9FE;border-color:#6D28D9}
+.lg.n-focus{background:#4F46E5;border-color:#312E81}.lg.n-possible{border-style:dashed}.lg.n-dead{border-color:#BE123C;border-width:2px}
+.lg[class*=" e-"]{height:0;border-width:2px 0 0;border-radius:0;width:22px;background:none}
+.lg.e-stopped{border-color:#94A3B8;border-top-style:dashed}.lg.e-async{border-color:#6366F1;border-top-style:dashed}
+.lg.e-ok{border-color:#047857}.lg.e-fail{border-color:#BE123C}.lg.e-done{border-color:#475569;border-top-style:dashed}
+.lg.e-skip{border-color:#B45309;border-top-style:dotted}.lg.e-dyn{border-color:#B45309;border-top-style:dashed}.lg.e-opaque{border-color:#64748B;border-top-style:dotted}
+.subtabs{display:flex;flex-wrap:wrap;gap:.2rem;border-bottom:1px solid var(--line);margin:-.2rem 0 1.1rem}
+.subtab{border:0;background:none;font:inherit;color:var(--ink2);padding:.55rem .85rem;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer}
+.subtab:hover{color:var(--ink)}.subtab.active{color:var(--ink);font-weight:600;border-bottom-color:var(--accent)}
+.subtab.disabled{opacity:.55;cursor:not-allowed}.subtab .n{font-size:.75rem;color:var(--ink2)}
+.subtab:focus-visible,.chip:focus-visible,.primary-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,400px);gap:1rem;align-items:start}
+.panel{position:sticky;top:1rem;max-height:calc(100vh - 2rem);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem;box-shadow:0 1px 2px #0f172a0d,0 4px 12px #0f172a0a}
+.panel h3{margin-top:1rem}
+tr.sel td{background:var(--accentSoft)}
+.kvl{display:grid;grid-template-columns:150px minmax(0,1fr);gap:.3rem .8rem}
+.kvl .k{color:var(--ink2);font-size:.8rem}
+ul.plain{list-style:none;padding:0}ul.plain li{margin:.3rem 0}
+.impact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem;margin-top:1rem}
+.impact-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.card.focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accentSoft)}
+.field{display:flex;flex-direction:column;gap:.25rem;font-size:.85rem;color:var(--ink2);margin:.4rem 0}
+.field input,.field select,.field textarea{font:inherit;color:var(--ink);padding:.45rem .6rem;border:1px solid var(--line);border-radius:6px;background:var(--panel);max-width:100%}
+.field select{max-width:640px}
+.details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.2rem 1rem}.details-grid .wide{grid-column:1/-1}
+.savebar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:.7rem 1rem;margin:.8rem 0}
+.savebar.dirty{border-color:var(--warn);background:var(--warnBg)}.savebar p{flex:1;margin:0}
+.primary-btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:.5rem 1rem;font:inherit;font-weight:600;cursor:pointer}
+.primary-btn:disabled{opacity:.5;cursor:not-allowed}
+.issue-head{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+@media (max-width:1000px){.split{grid-template-columns:1fr}.panel{position:static;max-height:none}.impact-grid,.impact-grid.two,.details-grid{grid-template-columns:1fr}}
+.grid>*,.layout>*{min-width:0}
+main{overflow-wrap:anywhere}
+.act.kv{display:grid;grid-template-columns:130px 1fr;gap:.15rem .8rem}
+.act.kv .k{color:var(--ink2);font-size:.8rem;padding-top:.1rem}
+@media (max-width:860px){.act.kv{grid-template-columns:1fr}}
+@media (max-width:860px){
+  table.t{display:block;overflow-x:auto;max-width:100%}
+  .act .kv{grid-template-columns:1fr}
+  .grid{grid-template-columns:1fr!important}
+  .badge{white-space:normal;overflow-wrap:anywhere}
+  pre.code{max-width:100%}
+}
 </style>
 </head>
 <body>
@@ -136,6 +267,7 @@ details>.body{padding:.2rem .9rem .9rem;border-top:1px solid var(--line2)}
   <nav id="nav" aria-label="Sections"></nav>
   <main id="main"></main>
 </div>
+<!--__DETAILS__-->
 <script>
 const DATA = /*__DATA__*/null;
 /* ============================================================ helpers */
@@ -148,8 +280,12 @@ const DFIDX = {}; DATA.dataflows.forEach(d => DFIDX[d.name] = d);
 const DSIDX = {}; DATA.datasets.forEach(d => DSIDX[d.name] = d);
 const LSIDX = {}; DATA.linkedServices.forEach(l => LSIDX[l.name] = l);
 const TRIDX = {}; DATA.triggers.forEach(t => TRIDX[t.name] = t);
-const slug = s => String(s).replace(/[^\w]+/g,"_");
-const qarg = s => esc(s).replace(/'/g,"\\'");
+/* Element ids come from a lookup, so any name (quotes, backslashes, Unicode)
+   maps to a safe, unique id. Links carry the name in a data attribute and one
+   listener handles every click; names are never interpolated into script. */
+const _ids = new Map();
+const slug = s => { s = String(s); if(!_ids.has(s)) _ids.set(s, "i"+_ids.size); return _ids.get(s); };
+const go = (kind, arg, label) => `<button class="xl" data-go="${kind}" data-arg="${esc(arg)}">${label}</button>`;
 function flash(id){
   const el = document.getElementById(id);
   if(!el) return;
@@ -160,20 +296,40 @@ function flash(id){
 }
 const goTo = (tab, prefix, name) => { switchTab(tab); requestAnimationFrame(()=>flash(prefix+slug(name))); };
 const goPipe = n => goTo("pipelines","pl-",n);
-const goEnt  = k => goTo("entities","ent-",k);
+const goEnt  = k => { SEL_OBJ = k; switchTab("objects"); requestAnimationFrame(()=>{
+  const row = document.getElementById("obj-"+slug(k)); if(row) row.scrollIntoView({block:"center"}); }); };
 const goDf   = n => goTo("dataflows","df-",n);
 const goDs   = n => goTo("datasets","ds-",n);
 const goLs   = n => goTo("linked","ls-",n);
 const goTrg  = n => goTo("triggers","trg-",n);
-const pipeLink = n => PIDX[n] ? `<button class="xl" onclick="goPipe('${qarg(n)}')">${esc(n)}</button>`
+const GO = {pipe:goPipe, ent:goEnt, df:goDf, ds:goDs, ls:goLs, trg:goTrg,
+            section: openSection, view: switchTab,
+            obj: k => { SEL_OBJ = k; renderObjectPanel(); },
+            impact: k => { IMPACT = k; switchTab("impact"); },
+            csv: name => downloadCsv(name),
+            issuefilter: p => { ISSUE_FILTER = p; switchTab("issues"); },
+            objkind: k => { OBJ_KIND = k; switchTab("objects"); },
+            wfilter: c => { wFilter = c; switchTab("warnings"); }};
+document.addEventListener("click", ev => {
+  const b = ev.target.closest("[data-go]");
+  if(b && GO[b.dataset.go]) GO[b.dataset.go](b.dataset.arg);
+});
+const pipeLink = n => PIDX[n] ? go("pipe", n, esc(n))
                               : `<span class="ref" title="pipeline not supplied">${esc(n)}</span> <span class="badge b-bad">missing</span>`;
-const entLink = k => EIDX[k] ? `<button class="xl" onclick="goEnt('${qarg(k)}')">${esc(EIDX[k].label)}</button>` : esc(k);
+/* Same-named objects in different places (dbo.Sales on two servers) show where they live. */
+const _labelCount = {}; DATA.entities.forEach(e => _labelCount[e.label.toLowerCase()] = (_labelCount[e.label.toLowerCase()]||0)+1);
+const entWhere = e => { const ep = e.endpoint||{};
+  return [ep.server||ep.url||(e.scope?`via ${e.scope}`:""), ep.database||ep.container].filter(Boolean).join(" / "); };
+const entName = k => { const e = EIDX[k]; if(!e) return esc(k);
+  const w = _labelCount[e.label.toLowerCase()]>1 ? entWhere(e) : "";
+  return esc(e.label) + (w?`<span class="where">${esc(w)}</span>`:""); };
+const entLink = k => EIDX[k] ? go("ent", k, entName(k)) : esc(k);
 const entLabel = k => EIDX[k] ? EIDX[k].label : k;
-const dfLink = n => DFIDX[n] ? `<button class="xl" onclick="goDf('${qarg(n)}')">${esc(n)}</button>`
+const dfLink = n => DFIDX[n] ? go("df", n, esc(n))
                              : `<span class="ref" title="data flow not supplied">${esc(n)}</span> <span class="badge b-bad">missing</span>`;
-const dsLink = n => DSIDX[n] ? `<button class="xl" onclick="goDs('${qarg(n)}')">${esc(n)}</button>`
+const dsLink = n => DSIDX[n] ? go("ds", n, esc(n))
                              : `<span class="ref" title="dataset not supplied">${esc(n)}</span> <span class="badge b-bad">missing</span>`;
-const lsLink = n => LSIDX[n] ? `<button class="xl" onclick="goLs('${qarg(n)}')">${esc(n)}</button>`
+const lsLink = n => LSIDX[n] ? go("ls", n, esc(n))
                              : `<span class="ref" title="linked service not supplied">${esc(n)}</span> <span class="badge b-bad">missing</span>`;
 const catBadge = c => `<span class="badge b-${esc(c)}">${esc(c)}</span>`;
 const entPills = (keys, cls) => keys.length
@@ -181,47 +337,85 @@ const entPills = (keys, cls) => keys.length
   : '<span class="mut">—</span>';
 const missing = DATA.resolution.filter(r=>r.status==="MISSING");
 
-/* ============================================================ tabs */
-const TABS = [
-  {id:"overview",  label:"Overview",        group:"Start", avail:()=>true},
-  {id:"orchestration", label:"Orchestration", group:"Start", avail:()=>true},
-  {id:"lineage",   label:"Lineage",         group:"Start", avail:()=>true, count:()=>DATA.lineageEdges.length},
-  {id:"pipelines", label:"Pipelines",       group:"Pipelines", avail:()=>DATA.pipelines.length>0, count:()=>DATA.pipelines.length,
-   why:"No pipeline definitions were supplied in this input."},
-  {id:"dataflows", label:"Data flows",      group:"Pipelines", avail:()=>DATA.dataflows.length>0, count:()=>DATA.dataflows.length,
-   why:"No data flow definitions were supplied. If pipelines reference data flows, their transformation logic is invisible — see Warnings."},
-  {id:"datasets",  label:"Datasets",        group:"Resources", avail:()=>DATA.datasets.length>0, count:()=>DATA.datasets.length,
-   why:"No dataset definitions were supplied. Dataset references cannot be resolved to physical tables or paths — see Warnings."},
-  {id:"linked",    label:"Linked services", group:"Resources", avail:()=>DATA.linkedServices.length>0, count:()=>DATA.linkedServices.length,
-   why:"No linked service definitions were supplied. Target servers, databases and storage accounts are unknown."},
-  {id:"triggers",  label:"Triggers",        group:"Resources", avail:()=>DATA.triggers.length>0, count:()=>DATA.triggers.length,
-   why:"No trigger definitions were supplied. How and when these pipelines start is invisible to this document — they may be scheduled, event-driven, or invoked externally."},
-  {id:"warnings",  label:"Warnings",        group:"Quality", avail:()=>true, count:()=>DATA.warnings.length||null},
-  {id:"entities",  label:"Entities",        group:"Reference", avail:()=>DATA.entities.length>0, count:()=>DATA.entities.length,
-   why:"No data entities were derived from this input."},
+/* ============================================================ sections and views */
+/* Six sections; each holds one or more views shown as sub-tabs. */
+const SECTIONS = [
+  {id:"overview",  label:"Overview"},
+  {id:"data",      label:"Data & sources"},
+  {id:"pipelines", label:"Pipelines & orchestration"},
+  {id:"impact",    label:"Impact & dependencies"},
+  {id:"issues",    label:"Review issues"},
+  {id:"details",   label:"Factory details"},
 ];
+const TABS = [
+  {id:"overview", section:"overview", label:"Overview", avail:()=>true},
+  {id:"objects", section:"data", label:"Objects", avail:()=>DATA.entities.length>0, count:()=>DATA.entities.length,
+   why:"No tables, files or other objects were found in this input."},
+  {id:"datasets", section:"data", label:"Datasets", avail:()=>DATA.datasets.length>0, count:()=>DATA.datasets.length,
+   why:"No dataset definitions were supplied. Dataset references cannot be resolved to physical tables or paths."},
+  {id:"linked", section:"data", label:"Linked services", avail:()=>DATA.linkedServices.length>0, count:()=>DATA.linkedServices.length,
+   why:"No linked service definitions were supplied. Target servers, databases and storage accounts are unknown."},
+  {id:"orchestration", section:"pipelines", label:"Orchestration", avail:()=>true},
+  {id:"pipelines", section:"pipelines", label:"Pipelines", avail:()=>DATA.pipelines.length>0, count:()=>DATA.pipelines.length,
+   why:"No pipeline definitions were supplied in this input."},
+  {id:"dataflows", section:"pipelines", label:"Data flows", avail:()=>DATA.dataflows.length>0, count:()=>DATA.dataflows.length,
+   why:"No data flow definitions were supplied. If pipelines reference data flows, their logic is not visible."},
+  {id:"triggers", section:"pipelines", label:"Triggers", avail:()=>DATA.triggers.length>0, count:()=>DATA.triggers.length,
+   why:"No trigger definitions were supplied. How and when these pipelines start is not visible here."},
+  {id:"impact", section:"impact", label:"Impact explorer", avail:()=>DATA.entities.length>0||DATA.pipelines.length>0},
+  {id:"lineage", section:"impact", label:"Movement edges", avail:()=>true, count:()=>DATA.lineageEdges.length},
+  {id:"issues", section:"issues", label:"Priority issues", avail:()=>true, count:()=>(DATA.issues||[]).length||null},
+  {id:"warnings", section:"issues", label:"All findings and notes", avail:()=>true, count:()=>DATA.warnings.length||null},
+  {id:"details", section:"details", label:"Factory details", avail:()=>true},
+];
+const LAST_VIEW = {};   // the view last open in each section
 
 function buildNav(){
   const nav = document.getElementById("nav");
   let html = `<div class="brand">ADF Doc Gen</div><div class="doc-title">${esc(DATA.title)}</div>`;
-  let group = "";
-  for(const t of TABS){
-    if(t.group!==group){ group=t.group; html += `<div class="nav-group">${group}</div>`; }
-    const ok = t.avail();
-    const c = ok && t.count ? t.count() : null;
-    html += ok
-      ? `<button class="nav-btn" id="nav-${t.id}" onclick="switchTab('${t.id}')">${t.label}${c?`<span class="n">${c}</span>`:""}</button>`
-      : `<button class="nav-btn disabled" title="${esc(t.why||"Not available for this input")}" tabindex="-1">${t.label}</button>`;
+  for(const sec of SECTIONS){
+    const views = TABS.filter(t=>t.section===sec.id);
+    const n = sec.id==="issues" ? (DATA.issues||[]).length : null;
+    html += `<button class="nav-btn" id="sec-${sec.id}" data-go="section" data-arg="${sec.id}">${sec.label}${n?`<span class="n">${n}</span>`:""}</button>`;
   }
   nav.innerHTML = html;
 }
+function subtabs(sectionId, activeId){
+  const views = TABS.filter(t=>t.section===sectionId);
+  if(views.length<2) return "";
+  return `<div class="subtabs" role="tablist">${views.map(t=>{
+    const ok = t.avail(), c = ok && t.count ? t.count() : null;
+    return ok ? `<button class="subtab${t.id===activeId?" active":""}" role="tab" aria-selected="${t.id===activeId}" id="nav-${t.id}" data-go="view" data-arg="${t.id}">${esc(t.label)}${c?` <span class="n">${c}</span>`:""}</button>`
+              : `<button class="subtab disabled" title="${esc(t.why||"Not available for this input")}" aria-disabled="true" tabindex="-1">${esc(t.label)}</button>`;
+  }).join("")}</div>`;
+}
+function openSection(id){
+  const views = TABS.filter(t=>t.section===id && t.avail());
+  const target = views.find(t=>t.id===LAST_VIEW[id]) || views[0];
+  if(target) switchTab(target.id);
+}
+let CURRENT = null; const VIEW_STATE = {};
 function switchTab(id){
   const tab = TABS.find(t=>t.id===id);
   if(!tab || !tab.avail()) return;
-  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
-  const btn = document.getElementById("nav-"+id);
-  if(btn) btn.classList.add("active");
-  document.getElementById("main").innerHTML = RENDER[id]();
+  LAST_VIEW[tab.section] = id;
+  document.querySelectorAll(".nav-btn").forEach(b=>{
+    const on = b.id==="sec-"+tab.section;
+    b.classList.toggle("active", on);
+    if(on) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current");
+  });
+  const main = document.getElementById("main");
+  if(CURRENT) VIEW_STATE[CURRENT] = {
+    q: [...main.querySelectorAll("input.search")].map(i=>i.value),
+    open: [...main.querySelectorAll("details[open][id]")].map(d=>d.id)};
+  main.innerHTML = subtabs(tab.section, id) + RENDER[id]();
+  CURRENT = id;
+  const st = VIEW_STATE[id];
+  if(st){
+    main.querySelectorAll("input.search").forEach((inp,i)=>{
+      if(st.q[i]){ inp.value = st.q[i]; inp.dispatchEvent(new Event("input")); }});
+    st.open.forEach(x=>{ const d=document.getElementById(x); if(d) d.open=true; });
+  }
   window.scrollTo(0,0);
 }
 
@@ -248,6 +442,24 @@ function conveyor(){
 }
 
 /* ============================================================ overview */
+function coverageCard(){
+  const c = DATA.coverage; if(!c) return "";
+  const row = (label, value, tone, note) => `<tr><td>${label}</td><td><span class="badge ${tone}">${esc(value)}</span></td><td class="mut">${note}</td></tr>`;
+  const n = x => x||0;
+  return `<h2>What this document can and cannot see</h2>
+  <div class="table-wrap"><table class="t"><thead><tr><th>Check</th><th>Result</th><th>Meaning</th></tr></thead><tbody>
+  ${row("Input", (c.inputFormats||[]).join(", ")||"unknown", "b-info", MODE==="selection"?"Individually exported objects: other pipelines may use them.":`${n(c.jsonFiles)} JSON file(s) read.`)}
+  ${row("Unreadable files", n(c.skippedFiles), c.skippedFiles?"b-bad":"b-ok", c.skippedFiles?"Skipped, so the document cannot claim to be complete. See Warnings.":"Every file was read.")}
+  ${row("Missing references", n(c.unresolvedReferences), c.unresolvedReferences?"b-bad":"b-ok", c.unresolvedReferences?"Objects referenced but not supplied, listed below.":"Every reference resolved.")}
+  ${c.deploymentParameters?row("Chosen at deployment", c.deploymentParameters, "b-info", "Connections named by template parameters."):""}
+  ${row("Opaque work", `${n(c.opaqueActivities)} of ${n(c.activities)}`, c.opaqueActivities?"b-warn":"b-ok", "Notebooks, procedures and external calls: their reads and writes are not visible.")}
+  ${row("Resolved at runtime", n(c.dynamicActivities), c.dynamicActivities?"b-warn":"b-ok", "Targets built from parameters or expressions.")}
+  ${c.unknownFootprints?row("Unknown footprint", c.unknownFootprints, "b-warn", "Activities whose data flow or code was not supplied or cannot be read."):""}
+  ${(c.duplicates||[]).length?row("Defined twice", c.duplicates.length, "b-warn", "Only the last definition was used. See Warnings."):""}
+  ${DATA.redactions?row("Secrets withheld", DATA.redactions, "b-info", "Values that looked like secrets were replaced with [redacted]."):""}
+  ${row("Run history", "not available", "b-info", "Generated from definitions, so nothing here shows whether loads succeed.")}
+  </tbody></table></div>`;
+}
 function rOverview(){
   const stats = [
     ["Pipelines", F.pipelineCount], ["Activities", F.activityCount],
@@ -257,7 +469,9 @@ function rOverview(){
   ];
   const modeNote = MODE==="factory"
     ? `<div class="card note"><b>Design-time truth.</b> This document is derived statically from the factory's JSON definitions. It has no run history: nothing here can be called "working", "failing", or "actively used". Parameterised connections show the parameter or Key Vault secret <i>name</i>, never a value. A pipeline with no trigger here may still be invoked externally (REST API, Synapse, Logic Apps).</div>`
-    : `<div class="card note"><b>Partial input.</b> ${missing.length} referenced object(s) were not supplied, so parts of this analysis are incomplete — see the checklist below for exactly which JSON files to go back and export. Everything else stated is design-time truth: no run history, parameter/secret names never values, and external invocation invisible.</div>`;
+    : MODE==="selection"
+    ? `<div class="card note"><b>Selected objects.</b> These objects were exported one by one. Every reference between them resolved, but a selection cannot show that the whole factory was supplied: other pipelines may use the same objects. Design-time truth only: no run history.</div>`
+    : `<div class="card note"><b>Partial input.</b> ${missing.length} referenced object(s) were not supplied${(DATA.coverage||{}).skippedFiles?` and ${DATA.coverage.skippedFiles} input file(s) could not be read`:""}, so parts of this analysis are incomplete — see the checklist below for exactly which JSON files to go back and export. Everything else stated is design-time truth: no run history, parameter/secret names never values, and external invocation invisible.</div>`;
 
   const checklist = !missing.length ? "" : `
   <h2>Input completeness — what to export next</h2>
@@ -284,21 +498,194 @@ function rOverview(){
   <h1>${esc(DATA.title)}</h1>
   <p class="sub">Generated ${esc(DATA.generated)} by adf-doc-gen · mode: <b>${MODE}</b></p>
   ${modeNote}
+  ${(()=>{ const d = DETAILS, bits = [["Environment",d.environment],["Owner",d.owner],["Source",d.sourceLocation],["Runbook",d.runbook]].filter(([,v])=>v);
+    return bits.length ? `<div class="card kvl">${bits.map(([k,v])=>`<div class="k">${k}</div><div>${esc(v)}</div>`).join("")}</div>`
+                       : `<p class="mut">No owner or runbook recorded yet. ${go("section","details","Add factory details")}</p>`; })()}
   <div class="grid c4" style="margin-top:1rem">
     ${stats.map(([l,v])=>`<div class="card stat"><div class="big">${num(v)}</div><div class="lbl">${l}</div></div>`).join("")}
   </div>
+  ${coverageCard()}
   ${checklist}
   ${DATA.linkedServices.length?`<h2>External systems this factory touches</h2><div class="grid c3">${sysCards}</div>`:""}
-  <h2>How to read this document</h2>
-  <div class="card">
-    <p><b>Orchestration</b> is the front door: the factory as a tree, from triggers and entry points down through pipeline calls into data flows. Expand a node to drill in; click a name to jump to its detail.</p>
-    <p style="margin-top:.5rem"><b>Lineage</b> answers "where does X come from?" and "what breaks if Y dies?" — every movement edge plus the full transitive closure. <span class="badge b-src">read</span> is the teal side, <span class="badge b-snk">written</span> the copper side, everywhere in this document.</p>
-    <p style="margin-top:.5rem"><b>Pipelines</b> gives three levels per pipeline: a one-line role and rolled-up effective reads/writes (including everything it transitively invokes); the activity flow in execution order grouped by container scope; and full detail per activity.</p>
-    <p style="margin-top:.5rem"><b>Warnings</b> is where the bodies are buried — read it before changing anything.</p>
-  </div>`;
+  ${journeys()}
+  ${priorityIssues()}`;
+}
+function journeys(){
+  // Each way work starts: a trigger or an entry-point pipeline, and what the run reads and writes.
+  const starts = [
+    ...DATA.triggers.flatMap(t=>t.startsPipelines.map(pl=>({how:TRIDX[t.name]?go("trg",t.name,esc(t.name)):esc(t.name), note:t.detail, state:t.state, pl}))),
+    ...DATA.pipelines.filter(p=>p.entryPoint).map(p=>({how:'<span class="mut">no trigger here</span>', note:"", state:"", pl:p.name}))];
+  if(!starts.length) return "";
+  const systems = keys => [...new Set(keys.map(k=>EIDX[k]).filter(e=>e&&PHYSICAL.has(e.kind)).map(e=>e.endpoint.system||e.endpoint.server||"unknown system"))];
+  const rows = starts.map(s=>{ const p = PIDX[s.pl];
+    if(!p) return `<tr><td>${s.how}</td><td>${pipeLink(s.pl)}</td><td colspan="2" class="mut">pipeline not supplied</td></tr>`;
+    const r = p.effectiveReads.filter(k=>PHYSICAL.has(EIDX[k]?.kind)), w = p.effectiveWrites.filter(k=>PHYSICAL.has(EIDX[k]?.kind));
+    return `<tr><td>${s.how}${s.state&&s.state.toLowerCase()!=="started"?` <span class="badge b-warn">${esc(s.state)}</span>`:""}<div class="mut">${esc(s.note||"")}</div></td>
+      <td>${pipeLink(s.pl)}<div class="mut">${esc(p.roleLine)}</div></td>
+      <td>${r.length} object(s)<div class="mut">${esc(systems(r).join(", ")||"—")}</div></td>
+      <td>${w.length} object(s)<div class="mut">${esc(systems(w).join(", ")||"—")}</div>${p.effectiveIncomplete.length?' <span class="badge b-bad">incomplete</span>':""}</td></tr>`;}).join("");
+  return `<h2>How work starts and what it touches</h2>
+  <div class="table-wrap"><table class="t"><thead><tr><th>Started by</th><th>Pipeline</th><th>Reads (incl. called pipelines)</th><th>Writes</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function priorityIssues(){
+  const top = (DATA.issues||[]).filter(i=>i.priority!=="low").slice(0,5);
+  const n = (DATA.issues||[]).length;
+  if(!n) return `<h2>Review issues</h2><div class="card"><b>No issues to review.</b> <span class="mut">See Review issues › All findings and notes for the limits of static analysis.</span></div>`;
+  return `<h2>Review first</h2>
+  ${top.map(i=>`<div class="card issue"><div class="issue-head"><span class="badge ${PRIO[i.priority]}">${esc(i.priority)}</span> <b>${esc(i.category)}</b> ${i.resource?"· "+resourceLink(i.resource):""}</div><p class="mut" style="margin-top:.3rem">${esc(i.action)}</p></div>`).join("")||'<p class="mut">No high or medium priority issues.</p>'}
+  <p>${go("section","issues",`All ${n} review issue(s)`)}</p>`;
 }
 
+
+/* ============================================================ diagrams */
+/* A small layered-graph renderer (no libraries): columns by longest path from
+   the starting nodes, rows ordered to reduce crossings, curved edges.
+   Nodes are keyboard-focusable links when they carry a data-go target. */
+function layoutGraph(nodes, edges){
+  const ids = nodes.map(n=>n.id), has = new Set(ids);
+  const byId = Object.fromEntries(nodes.map(n=>[n.id,n]));
+  edges = edges.filter(e=>has.has(e.from)&&has.has(e.to)&&e.from!==e.to);
+  const out = {}, inn = {};
+  ids.forEach(i=>{ out[i]=[]; inn[i]=[]; });
+  edges.forEach(e=>{ out[e.from].push(e.to); inn[e.to].push(e.from); });
+  // Back edges (cycles) are found by DFS and ignored when ranking.
+  const state = {}, back = new Set();
+  const visit = u=>{ state[u]=1; for(const v of out[u]){ if(state[v]===1) back.add(u+"→"+v); else if(!state[v]) visit(v); } state[u]=2; };
+  ids.forEach(i=>{ if(!state[i]) visit(i); });
+  const order = [], seen = {};
+  const topo = u=>{ if(seen[u]) return; seen[u]=1; for(const v of out[u]) if(!back.has(u+"→"+v)) topo(v); order.push(u); };
+  ids.forEach(topo); order.reverse();
+  // Rank = longest path, respecting a node's minimum column (e.g. pipelines after triggers).
+  const rank = {};
+  for(const u of order){
+    let r = byId[u].col ?? 0;
+    for(const p of inn[u]) if(!back.has(p+"→"+u)) r = Math.max(r, (rank[p]??0)+1);
+    rank[u] = r;
+  }
+  // Pull sources right next to their first target so they don't sit far left.
+  for(const u of [...order].reverse()){
+    if(inn[u].length || byId[u].col!=null || !out[u].length) continue;
+    const t = Math.min(...out[u].filter(v=>!back.has(u+"→"+v)).map(v=>rank[v]));
+    if(isFinite(t)) rank[u] = Math.max(rank[u], t-1);
+  }
+  // Long edges pass through invisible waypoints, one per column they cross,
+  // so they are routed between boxes instead of through them.
+  const cols = [], G = {}, routes = [];
+  const place = (id,c)=>{ (cols[c]=cols[c]||[]).push(id); };
+  ids.forEach(i=>{ place(i, rank[i]); G[i] = {up:[], down:[]}; });
+  let k = 0;
+  for(const e of edges){
+    let a = rank[e.from], z = rank[e.to], chain = [e.from];
+    if(z-a>1){ for(let c=a+1;c<z;c++){ const d = "·"+(k++); place(d,c); G[d]={up:[],down:[],dummy:true}; chain.push(d); } }
+    chain.push(e.to);
+    for(let i=1;i<chain.length;i++){ G[chain[i-1]].down.push(chain[i]); G[chain[i]].up.push(chain[i-1]); }
+    routes.push({e, chain});
+  }
+  for(let c=0;c<cols.length;c++) cols[c] = cols[c] || [];
+  const pos = {};
+  const setPos = ()=>cols.forEach(col=>col.forEach((id,i)=>pos[id]=i));
+  setPos();
+  const bary = (id, dir, c) => { const nb = G[id][dir].filter(x=>pos[x]!=null && cols[c]?.includes(x)).map(x=>pos[x]);
+    return nb.length ? nb.reduce((x,y)=>x+y,0)/nb.length : null; };
+  for(let sweep=0; sweep<8; sweep++){
+    const down = sweep%2===0;
+    const range = down ? [...cols.keys()].slice(1) : [...cols.keys()].reverse().slice(1);
+    for(const c of range){
+      const key = {}; cols[c].forEach(id=>{ const b = bary(id, down?"up":"down", down?c-1:c+1); key[id] = b==null ? pos[id] : b; });
+      cols[c].sort((x,y)=>key[x]-key[y]); setPos();
+    }
+  }
+  return {cols, rank, routes, dummy: id => G[id]?.dummy};
+}
+const GW = 210, GH = 52, GX = 70, GY = 14, GD = 10;
+function clip(t, n){ t = String(t??""); return t.length>n ? t.slice(0,n-1)+"…" : t; }
+function graphSVG(nodes, edges, opts={}){
+  if(!nodes.length) return `<div class="empty">Nothing to draw.</div>`;
+  const {cols, routes, dummy} = layoutGraph(nodes, edges);
+  const hOf = id => dummy(id) ? GD : GH;
+  const colH = cols.map(c=>c.reduce((t,id)=>t+hOf(id),0) + Math.max(0,c.length-1)*GY);
+  const top = opts.columns ? 22 : 0;
+  const H = Math.max(...colH, GH) + 20, W = cols.length*GW + (cols.length-1)*GX + 20;
+  const xy = {};
+  cols.forEach((col,c)=>{ let y = (H-20-colH[c])/2 + 10 + top;
+    col.forEach(id=>{ xy[id] = {x: 10 + c*(GW+GX), y}; y += hOf(id)+GY; }); });
+  const heads = opts.columns ? opts.columns.map((t,c)=>c<cols.length&&t?`<text class="g-col" x="${10+c*(GW+GX)}" y="14">${esc(t)}</text>`:"").join("") : "";
+  const pt = (id, side) => { const p = xy[id];
+    if(dummy(id)) return {x: side==="in" ? p.x : p.x+GW, y: p.y+GD/2};
+    return {x: side==="in" ? p.x : p.x+GW, y: p.y+GH/2}; };
+  const path = chain => {
+    let d = "";
+    for(let i=1;i<chain.length;i++){
+      const a = pt(chain[i-1],"out"), b = pt(chain[i],"in");
+      if(i===1) d += `M${a.x},${a.y}`;
+      else d += ` L${a.x},${a.y}`;           // straight run through a waypoint's column
+      if(b.x<=a.x){ const dy = Math.max(a.y,b.y)+GH/2+10; d += ` C${a.x+40},${a.y} ${a.x+40},${dy} ${(a.x+b.x)/2},${dy} S${b.x-40},${b.y} ${b.x},${b.y}`; }
+      else { const m=(a.x+b.x)/2; d += ` C${m},${a.y} ${m},${b.y} ${b.x},${b.y}`; }
+    }
+    return d; };
+  const ed = routes.map(({e,chain})=>`<path class="g-edge ${e.cls||""}" d="${path(chain)}" data-from="${esc(e.from)}" data-to="${esc(e.to)}" marker-end="url(#arr)">${e.title?`<title>${esc(e.title)}</title>`:""}</path>`).join("");
+  const nd = nodes.map(n=>{ const p = xy[n.id]; if(!p) return "";
+    const link = n.go ? ` data-go="${n.go}" data-arg="${esc(n.arg)}" tabindex="0" role="link"` : "";
+    const lbl = clip(n.label, 26), sub = clip(n.sub||"", 33);
+    return `<g class="g-node ${n.cls||""}" data-id="${esc(n.id)}" transform="translate(${p.x},${p.y})"${link} aria-label="${esc(n.kind?n.kind+": ":"")}${esc(n.label)}">
+      <title>${esc(n.kind?n.kind+": ":"")}${esc(n.label)}${n.sub?"\n"+esc(n.sub):""}</title>
+      <rect width="${GW}" height="${GH}" rx="10"/>
+      ${n.kind?`<text class="g-kind" x="11" y="16">${esc(clip(n.kind,34))}</text>`:""}
+      <text class="g-label" x="11" y="${n.kind?32:24}">${esc(lbl)}</text>
+      ${sub?`<text class="g-sub" x="11" y="${n.kind?45:40}">${esc(sub)}</text>`:""}</g>`; }).join("");
+  return `<div class="graph${opts.cls?" "+opts.cls:""}" role="img" aria-label="${esc(opts.label||"Diagram")}">
+    <svg width="${W}" height="${H+top}" viewBox="0 0 ${W} ${H+top}" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="g-arrow"/></marker></defs>
+    ${heads}${ed}${nd}</svg></div>`;
+}
+/* Hover or focus a node: highlight its edges and neighbours. */
+function graphHover(ev, on){
+  const g = ev.target.closest && ev.target.closest(".g-node"); if(!g) return;
+  const svg = g.ownerSVGElement, id = g.dataset.id;
+  svg.classList.toggle("g-dim", on);
+  const near = new Set([id]);
+  svg.querySelectorAll(".g-edge").forEach(p=>{ const hit = p.dataset.from===id||p.dataset.to===id;
+    p.classList.toggle("g-hot", on&&hit); if(hit){ near.add(p.dataset.from); near.add(p.dataset.to); } });
+  svg.querySelectorAll(".g-node").forEach(n=>n.classList.toggle("g-hot", on&&near.has(n.dataset.id)));
+}
+document.addEventListener("mouseover", e=>graphHover(e,true));
+document.addEventListener("mouseout", e=>graphHover(e,false));
+document.addEventListener("focusin", e=>graphHover(e,true));
+document.addEventListener("focusout", e=>graphHover(e,false));
+document.addEventListener("keydown", e=>{
+  if((e.key==="Enter"||e.key===" ") && e.target.matches && e.target.matches("g[data-go]")){ e.preventDefault(); e.target.dispatchEvent(new MouseEvent("click",{bubbles:true})); }
+});
+const legend = items => `<div class="legend">${items.map(([cls,t])=>`<span><i class="lg ${cls}"></i>${t}</span>`).join("")}</div>`;
+
 /* ============================================================ orchestration */
+function orchestrationGraph(){
+  const nodes = [], edges = [], seen = new Set();
+  const addPl = name => { const id = "pipeline:"+name; if(seen.has(id)) return; seen.add(id);
+    const p = PIDX[name];
+    const r = p ? p.effectiveReads.filter(k=>PHYSICAL.has(EIDX[k]?.kind)).length : 0, w = p ? p.effectiveWrites.filter(k=>PHYSICAL.has(EIDX[k]?.kind)).length : 0;
+    nodes.push({id, kind:p&&p.entryPoint?"pipeline · entry point":"pipeline", label:name,
+      sub: p ? (p.invokes.length?`calls ${p.invokes.length} · `:"")+`reads ${r} · writes ${w}`+(p.opaqueCount?` · ${p.opaqueCount} opaque`:"") : "not supplied",
+      cls: p ? "n-pipeline" : "n-missing", go: p?"pipe":null, arg:name, col: DATA.triggers.length?1:0}); };
+  for(const t of DATA.triggers){
+    const stopped = t.state && t.state.toLowerCase()!=="started";
+    nodes.push({id:"trigger:"+t.name, kind:"trigger"+(stopped?" · "+t.state.toLowerCase():""), label:t.name,
+      sub:(t.detail||t.type).split(" | ")[0].replace(/ from \S+/,""), cls:"n-trigger"+(stopped?" n-stopped":""), go:"trg", arg:t.name, col:0});
+  }
+  for(const e of DATA.orchestration.edges){
+    if(e.fromKind==="pipeline") addPl(e.from);
+    if(e.toKind==="pipeline") addPl(e.to);
+    if(e.toKind==="dataflow" && !seen.has("dataflow:"+e.to)){ seen.add("dataflow:"+e.to);
+      const d = DFIDX[e.to];
+      nodes.push({id:"dataflow:"+e.to, kind:"data flow", label:e.to, sub:d?`${d.sources.length} source(s) · ${d.sinks.length} sink(s)`:"not supplied",
+        cls:d?"n-dataflow":"n-missing", go:d?"df":null, arg:e.to}); }
+    const stopped = e.fromKind==="trigger" && /stopped/i.test(e.detail);
+    edges.push({from:e.fromKind+":"+e.from, to:e.toKind+":"+e.to,
+      cls: e.fromKind==="trigger" ? (stopped?"e-stopped":"e-trigger") : e.toKind==="dataflow" ? "e-df" : (/fire-and-forget/.test(e.detail)?"e-async":""),
+      title: e.detail});
+  }
+  DATA.pipelines.forEach(p=>addPl(p.name));
+  return graphSVG(nodes, edges, {label:"Orchestration diagram", columns:DATA.triggers.length?["Triggers","Pipelines"]:["Pipelines"]});
+}
 function rOrchestration(){
   const childEdges = DATA.orchestration.edges;
   const kids = {};
@@ -308,7 +695,7 @@ function rOrchestration(){
   }
   const seen = new Set();
   function nodeHtml(kind, name, detail){
-    const link = kind==="trigger" ? (TRIDX[name]?`<button class="xl" onclick="goTrg('${qarg(name)}')">${esc(name)}</button>`:esc(name))
+    const link = kind==="trigger" ? (TRIDX[name]?go("trg", name, esc(name)):esc(name))
                : kind==="dataflow" ? dfLink(name) : pipeLink(name);
     const p = kind==="pipeline" ? PIDX[name] : null;
     const t = kind==="trigger" ? TRIDX[name] : null;
@@ -331,10 +718,14 @@ function rOrchestration(){
     .map(p=>branch("pipeline", p.name, "", 0)).join("");
   const orphanNote = DATA.pipelines.some(p=>p.entryPoint)
     ? `<p class="sub">Entry points are pipelines no trigger or pipeline in this factory starts. That is normal for orchestrators — but a worker pipeline here may be dead, or invoked externally (REST API, Synapse, Logic Apps); this document cannot tell which.</p>` : "";
-  return `${conveyor()}<h1>Orchestration — how work starts and cascades</h1>
-  <p class="sub">The factory as a tree: triggers first, then pipelines nothing here invokes, drilling into ExecutePipeline calls and data flows. Click any name for its detail.</p>
+  return `<h1>Orchestration: how work starts and cascades</h1>
+  <p class="sub">Triggers on the left start pipelines; arrows show which pipeline calls which, and which data flows each runs. A pipeline called from several places appears once. Hover a box to follow its connections; select it to open its detail.</p>
+  ${legend([["n-trigger","trigger"],["n-pipeline","pipeline"],["n-dataflow","data flow"],["n-missing","not supplied"],["e-stopped","stopped trigger"],["e-async","fire-and-forget call"]])}
+  ${orchestrationGraph()}
+  <details id="orch-outline"><summary>Outline (text version)</summary><div class="body">
   ${DATA.triggers.length?`<h2>From triggers</h2><ul class="tree">${triggerRoots}</ul>`:`<div class="empty"><b>No triggers supplied.</b><br>How these pipelines start is invisible to this document — they may be scheduled elsewhere or invoked externally.</div>`}
-  ${entryRoots?`<h2>Entry points (no known invoker in this factory)</h2>${orphanNote}<ul class="tree">${entryRoots}</ul>`:""}`;
+  ${entryRoots?`<h2>Entry points (no known invoker in this factory)</h2>${orphanNote}<ul class="tree">${entryRoots}</ul>`:""}
+  </div></details>`;
 }
 
 /* ============================================================ lineage */
@@ -343,13 +734,10 @@ function rLineage(){
   const movers = DATA.entities.filter(e=>e.upstream.length||e.downstream.length);
   const roots = movers.filter(e=>!e.upstream.length);
   const leaves = movers.filter(e=>!e.downstream.length);
-  return `${conveyor()}<h1>Data movement lineage</h1>
-  <p class="sub">The file to consult for "where does X come from?", "what writes to warehouse Y?", and "if server Z dies, which pipelines break?". Edges marked <span class="badge b-info">opaque</span> hand off to code ADF cannot see — the chain is broken there, so absence of a downstream entry past that point is <b>not</b> evidence data does not flow. <span class="badge b-warn">dynamic</span> targets are built at runtime; the static name is indicative only.</p>
-  <h2>Impact explorer</h2>
-  <div class="card">
-    <input class="search" id="lin-q" placeholder="Type a table, path, server, or dataset…" oninput="linExplore(this.value)">
-    <div id="lin-result" class="mut">Pick an entity to see everything upstream (its dependencies) and downstream (its blast radius), transitively.</div>
-  </div>
+  return `<h1>Data movement</h1>
+  <p class="sub">Where data comes from and where it lands. Edges marked <span class="badge b-info">opaque</span> hand off to code ADF cannot see — the chain is broken there, so absence of a downstream entry past that point is <b>not</b> evidence data does not flow. <span class="badge b-warn">dynamic</span> targets are built at runtime; the static name is indicative only.</p>
+  <h2>Lineage map</h2>
+  ${lineageMap()}
   <h2>Movement edges <span class="mut" style="font-weight:400">(${DATA.lineageEdges.length})</span></h2>
   <div class="filter-row">
     ${["all","opaque","dynamic"].map(f=>`<button class="chip ${linFilter===f?"on":""}" onclick="linFilter='${f}';switchTab('lineage')">${f}</button>`).join("")}
@@ -371,31 +759,27 @@ function rLineage(){
       <p class="mut">Nothing downstream in this factory consumes them.</p>
       <div class="pill-list">${leaves.map(e=>`<span class="badge b-snk" style="text-transform:none;font-size:.72rem">${entLink(e.key)}</span>`).join(" ")||"—"}</div></div>
   </div>
-  <h2>Transitive closure</h2>
+  <details id="closure"><summary>Full transitive closure (${movers.length} objects)</summary><div class="body table-wrap">
   <table class="t"><thead><tr><th>Entity</th><th>Kind</th><th>Depends on (all upstream)</th><th>Feeds (all downstream)</th></tr></thead><tbody>
   ${movers.slice().sort((a,b)=>a.label.localeCompare(b.label)).map(e=>`<tr>
     <td>${entLink(e.key)}</td><td class="mut">${esc(e.kind)}</td>
     <td>${e.upstream.map(entLink).join(", ")||'<span class="mut">— root —</span>'}</td>
     <td>${e.downstream.map(entLink).join(", ")||'<span class="mut">— terminal —</span>'}</td></tr>`).join("")}
-  </tbody></table>`;
+  </tbody></table></div></details>`;
 }
-function linExplore(q){
-  q = q.trim().toLowerCase();
-  const host = document.getElementById("lin-result");
-  if(q.length<2){ host.innerHTML = '<span class="mut">Pick an entity to see everything upstream and downstream, transitively.</span>'; return; }
-  const hits = DATA.entities.filter(e =>
-    e.label.toLowerCase().includes(q) ||
-    e.aliases.some(a=>a.toLowerCase().includes(q)) ||
-    Object.values(e.endpoint).some(v=>v&&String(v).toLowerCase().includes(q))
-  ).slice(0,8);
-  if(!hits.length){ host.innerHTML = `<span class="mut">No entity matches "${esc(q)}".</span>`; return; }
-  host.innerHTML = hits.map(e=>`
-    <div style="border-top:1px solid var(--line2);padding:.55rem 0">
-      <b>${entLink(e.key)}</b> <span class="badge b-other">${esc(e.kind)}</span> ${e.dynamic?'<span class="badge b-warn">dynamic</span>':""}
-      <div class="mut" style="margin:.25rem 0">Depends on: ${e.upstream.map(entLink).join(", ")||"— nothing in this factory (root) —"}</div>
-      <div class="mut">Feeds: ${e.downstream.map(entLink).join(", ")||"— nothing in this factory (terminal) —"}</div>
-      <div class="mut" style="margin-top:.25rem">Touched by: ${e.referencedBy.slice(0,5).map(esc).join("; ")}${e.referencedBy.length>5?" …":""}</div>
-    </div>`).join("");
+let MAP_PIPE = "";
+function lineageMap(){
+  const edges = DATA.lineageEdges.filter(e=>!MAP_PIPE||e.pipeline===MAP_PIPE);
+  const keys = new Set(edges.flatMap(e=>[...e.sources,...e.sinks]).filter(k=>EIDX[k] && EIDX[k].kind!=="linked_service"));
+  const pick = `<label class="field"><span>Show movements by</span><select onchange="MAP_PIPE=this.value;switchTab('lineage')">
+    <option value="">all pipelines</option>${DATA.pipelines.map(p=>`<option value="${esc(p.name)}"${p.name===MAP_PIPE?" selected":""}>${esc(p.name)}</option>`).join("")}</select></label>`;
+  if(keys.size>160) return pick+`<div class="card note">This factory moves ${keys.size} objects; choose a pipeline to draw its part of the map.</div>`;
+  const nodes = [...keys].map(k=>{ const e = EIDX[k]; const ops = new Set((e.usage||[]).map(u=>u.operation));
+    return {id:k, kind:(KIND_LABEL[e.kind]||e.kind)+(e.dynamic?" · dynamic":""), label:e.label, sub:entWhere(e),
+      cls: e.kind==="notebook"||e.kind==="stored_procedure"||e.kind==="code_artifact"||e.kind==="endpoint" ? "n-code" : !e.upstream.length ? "n-src" : !e.downstream.length ? "n-snk" : "n-mid", go:"obj", arg:k}; });
+  const flat = edges.flatMap(e=>e.sources.flatMap(s=>e.sinks.map(t=>({from:s, to:t, cls:e.opaque?"e-opaque":e.dynamic?"e-dyn":"", title:`${e.mechanism}: ${e.pipeline} :: ${e.activity}`}))));
+  return pick + legend([["n-src","external input"],["n-mid","intermediate"],["n-snk","final output"],["n-code","code / endpoint"],["e-dyn","runtime-resolved"],["e-opaque","opaque"]])
+    + graphSVG(nodes, flat, {label:"Lineage map"});
 }
 
 /* ============================================================ pipelines */
@@ -425,16 +809,33 @@ function actRow(a){
     </div>
   </details>`;
 }
+const COND_CLS = {Succeeded:"e-ok", Failed:"e-fail", Completed:"e-done", Skipped:"e-skip"};
+function activityGraph(acts, scope){
+  if(acts.length<2 && !acts.some(a=>a.dependsOn.length)) return "";
+  const names = new Set(acts.map(a=>a.activity));
+  const nodes = acts.map(a=>{
+    const inner = DATA.pipelines.flatMap(p=>p.activities).filter(x=>x.scope.startsWith((scope==="(root)"?"":scope+" > ")+a.activity+" [")).length;
+    const target = a.invokesPipeline ? "→ "+a.invokesPipeline : a.invokesDataflow ? "→ "+a.invokesDataflow : "";
+    return {id:a.activity, kind:a.type+(a.opaque?" · opaque":"")+(a.dynamic?" · dynamic":""), label:a.activity,
+      sub: target || (inner?`contains ${inner} activit${inner===1?"y":"ies"}`:(a.reads.length||a.writes.length?`reads ${a.reads.length} · writes ${a.writes.length}`:"")),
+      cls:"n-cat-"+a.category+(a.inactive?" n-stopped":"")};
+  });
+  const edges = acts.flatMap(a=>a.dependsOn.filter(d=>names.has(d.activity)).map(d=>{
+    const on = (d.on||"Succeeded").split(",")[0];
+    return {from:d.activity, to:a.activity, cls:COND_CLS[on]||"", title:`${a.activity} runs after ${d.activity}: ${d.on||"Succeeded"}`}; }));
+  return graphSVG(nodes, edges, {label:"Activity flow", cls:"small"});
+}
 function rPipelines(){
   const cards = DATA.pipelines.map(p=>{
     const scopes = {};
     for(const a of p.activities) (scopes[a.scope] = scopes[a.scope] || []).push(a);
     const scopeHtml = Object.entries(scopes).map(([scope, acts])=>`
       ${scope==="(root)"?"":`<div class="scopehdr">inside ${esc(scope)}</div>`}
+      ${activityGraph(acts, scope)}
       ${acts.slice().sort((x,y)=>(x.step===0?99:x.step)-(y.step===0?99:y.step)||x.activity.localeCompare(y.activity)).map(actRow).join("")}`).join("");
     const badges = [
       p.entryPoint?'<span class="badge b-orchestration">entry point</span>':"",
-      p.effectiveIncomplete.length?`<span class="badge b-bad" title="Invoked child pipeline(s) not supplied: ${esc(p.effectiveIncomplete.join(", "))}">rollup incomplete</span>`:"",
+      p.effectiveIncomplete.length?`<span class="badge b-bad" title="Not supplied, so what they read and write is unknown: ${esc(p.effectiveIncomplete.join(", "))}">rollup incomplete</span>`:"",
       p.opaqueCount?`<span class="badge b-info">${p.opaqueCount} opaque</span>`:"",
       p.dynamicCount?`<span class="badge b-warn">${p.dynamicCount} dynamic</span>`:"",
     ].filter(Boolean).join(" ");
@@ -446,21 +847,22 @@ function rPipelines(){
         ${p.description?`<p class="mut" style="margin:.5rem 0">${esc(p.description)}</p>`:""}
         <div class="act kv" style="border:0;margin:.5rem 0">
           ${p.folder?`<div class="k">Folder</div><div class="mut">${esc(p.folder)}</div>`:""}
-          <div class="k">Started by</div><div class="mut">${[...p.triggers.map(t=>TRIDX[t]?`<button class="xl" onclick="goTrg('${qarg(t)}')">${esc(t)}</button>`:esc(t)), ...p.invokedBy.map(esc)].join(", ")||"nothing in this factory (may be invoked externally)"}</div>
+          <div class="k">Started by</div><div class="mut">${[...p.triggers.map(t=>TRIDX[t]?go("trg", t, esc(t)):esc(t)), ...p.invokedBy.map(esc)].join(", ")||"nothing in this factory (may be invoked externally)"}</div>
           ${p.invokes.length?`<div class="k">Invokes</div><div>${p.invokes.map(pipeLink).join(", ")}</div>`:""}
           ${p.dataflows.length?`<div class="k">Data flows</div><div>${p.dataflows.map(dfLink).join(", ")}</div>`:""}
           ${Object.keys(p.parameters).length?`<div class="k">Parameters</div><div class="mut">${Object.entries(p.parameters).map(([k,v])=>`<span class="ref">${esc(k)}: ${esc(v)}</span>`).join(" ")}</div>`:""}
           ${Object.keys(p.variables).length?`<div class="k">Variables</div><div class="mut">${Object.entries(p.variables).map(([k,v])=>`<span class="ref">${esc(k)}: ${esc(v)}</span>`).join(" ")}</div>`:""}
           <div class="k">Activity mix</div><div class="mut">${esc(cats)}</div>
-          <div class="k">Reads (effective)</div><div>${entPills(p.effectiveReads,"b-src")}${p.effectiveIncomplete.length?` <span class="mut">— incomplete: ${p.effectiveIncomplete.map(esc).join(", ")} not supplied</span>`:""}</div>
+          <div class="k">Reads (effective)</div><div>${entPills(p.effectiveReads,"b-src")}${p.effectiveIncomplete.length?` <span class="mut">— incomplete: ${p.effectiveIncomplete.map(esc).join(", ")} not supplied, so their reads and writes are unknown</span>`:""}</div>
           <div class="k">Writes (effective)</div><div>${entPills(p.effectiveWrites,"b-snk")}${p.effectiveIncomplete.length?` <span class="mut">— incomplete</span>`:""}</div>
         </div>
-        <h3>Activity flow <span class="mut" style="font-weight:400">(step number = execution order; equal steps can run in parallel)</span></h3>
+        <h3>Activity flow</h3>
+        ${legend([["e-ok","on success"],["e-fail","on failure"],["e-done","on completion"],["e-skip","on skip"]])}
         ${scopeHtml}
       </div>
     </details>`;
   }).join("");
-  return `${conveyor()}<h1>Pipelines</h1>
+  return `<h1>Pipelines</h1>
   <p class="sub">Effective reads/writes include everything a pipeline transitively invokes (child pipelines, data flows) — the high-level answer to "what does this pipeline do overall". Expand for the activity flow; expand an activity for full detail.</p>
   <input class="search" placeholder="Search pipelines…" oninput="fCards(this.value,'pl-list')">
   <div id="pl-list">${cards}</div>`;
@@ -473,6 +875,15 @@ function fCards(q, listId){
 }
 
 /* ============================================================ data flows */
+function dataflowGraph(df){
+  const stepName = x => String(x).split("@")[0].trim();
+  const names = new Set(df.steps.map(s=>s.name));
+  const nodes = df.steps.map(s=>({id:s.name, kind:s.op, label:s.name,
+    sub: s.op==="source" ? ((df.sources.find(x=>x.stream===s.name)||{}).label||"") : s.op==="sink" ? ((df.sinks.find(x=>x.stream===s.name)||{}).label||"") : "",
+    cls: (s.op==="source"?"n-src":s.op==="sink"?"n-snk":"n-xform")+(s.deadEnd?" n-dead":"")}));
+  const edges = df.steps.flatMap(s=>s.inputs.map(stepName).filter(i=>names.has(i)).map(i=>({from:i, to:s.name})));
+  return legend([["n-src","source"],["n-xform","transformation"],["n-snk","sink"],["n-dead","output nothing uses"]]) + graphSVG(nodes, edges, {label:"Data flow "+df.name});
+}
 function rDataflows(){
   const cards = DATA.dataflows.map(df=>`
     <details id="df-${slug(df.name)}">
@@ -487,7 +898,9 @@ function rDataflows(){
           <div class="card" style="margin:0"><div class="eyebrow" style="color:var(--snk)">Sinks</div>
             ${df.sinks.map(s=>`<div style="margin-top:.3rem"><span class="ref">${esc(s.stream)}</span> → ${s.dataset?dsLink(s.dataset):esc(s.label)}</div>`).join("")||'<span class="mut">—</span>'}</div>
         </div>
-        <h3>Transformation chain <span class="mut" style="font-weight:400">(execution order)</span></h3>
+        <h3>Transformations</h3>
+        ${dataflowGraph(df)}
+        <details><summary>Step table</summary><div class="body table-wrap">
         <table class="t"><thead><tr><th>#</th><th>Step</th><th>Op</th><th>Inputs</th><th>Output streams</th><th>Config</th></tr></thead><tbody>
         ${df.steps.slice().sort((a,b)=>(a.execOrder||1e6)-(b.execOrder||1e6)).map(s=>`<tr>
           <td class="mut">${s.execOrder||"?"}</td>
@@ -496,12 +909,12 @@ function rDataflows(){
           <td class="mut">${s.inputs.map(esc).join("; ")||"—"}</td>
           <td class="mut">${s.outputStreams.map(esc).join("; ")||"—"}</td>
           <td class="mut" style="max-width:340px">${esc(s.config)}</td></tr>`).join("")}
-        </tbody></table>
+        </tbody></table></div></details>
         ${df.sinkTraces.length?`<h3>Sink traces — each sink back to its sources</h3>
         ${df.sinkTraces.map(t=>`<div class="mut" style="margin:.25rem 0"><span class="ref">${esc(t.sink)}</span> ← sources: <b>${t.sources.map(esc).join(", ")||"?"}</b> — path: ${t.chain.map(esc).join(" → ")}</div>`).join("")}`:""}
       </div>
     </details>`).join("");
-  return `${conveyor()}<h1>Mapping data flows</h1>
+  return `<h1>Mapping data flows</h1>
   <p class="sub">Each flow's transformation chain parsed from its script, in execution order, with every sink traced back to the sources that feed it. Dead ends are transformations whose output nothing consumes — dead logic, or a connection never made.</p>
   <input class="search" placeholder="Search data flows…" oninput="fCards(this.value,'df-list')">
   <div id="df-list">${cards}</div>`;
@@ -521,7 +934,7 @@ function rDatasets(){
       <td><span class="ref">${esc(target)}</span></td>
       <td class="mut">${d.referencedBy.slice(0,3).map(esc).join("<br>")}${d.referencedBy.length>3?`<br>+${d.referencedBy.length-3} more`:""}${d.referencedBy.length?"":'<span class="mut">not referenced by any supplied pipeline or data flow</span>'}</td></tr>`;
   }).join("");
-  return `${conveyor()}<h1>Datasets</h1>
+  return `<h1>Datasets</h1>
   <p class="sub">Every dataset resolved to its physical target through its linked service. "Unreferenced" means no supplied pipeline or data flow uses it — pipelines not included in this input may still.</p>
   <input class="search" placeholder="Search datasets…" oninput="fRows(this.value)">
   <table class="t"><thead><tr><th>Dataset</th><th>Type</th><th>Linked service</th><th>Resolves to</th><th>Referenced by</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -553,7 +966,7 @@ function rLinked(){
         <div class="k">Referenced by</div><div class="mut">${ls.referencedBy.slice(0,6).map(esc).join("; ")||"nothing supplied references this linked service"}${ls.referencedBy.length>6?" …":""}</div>
       </div></div>
     </details>`).join("");
-  return `${conveyor()}<h1>Linked services — connections, never credentials</h1>
+  return `<h1>Linked services — connections, never credentials</h1>
   <p class="sub">The external systems this factory connects to. Secrets are never shown: Key Vault references report the secret name, parameterised targets report the parameter name, and inline credentials are flagged but not printed.</p>
   <input class="search" placeholder="Search linked services…" oninput="fCards(this.value,'ls-list')">
   <div id="ls-list">${cards}</div>`;
@@ -564,11 +977,11 @@ function rTriggers(){
   const rows = DATA.triggers.map(t=>`<tr id="trg-${slug(t.name)}">
     <td><b>${esc(t.name)}</b></td>
     <td class="mut">${esc(t.type)}</td>
-    <td><span class="badge ${t.state.toLowerCase()==="started"?"b-ok":"b-warn"}">${esc(t.state)}</span></td>
-    <td>${t.startsPipelines.map(pipeLink).join(", ")||'<span class="mut">starts nothing</span>'}</td>
-    <td class="mut">${esc(t.detail)||"—"}</td></tr>`).join("");
-  return `${conveyor()}<h1>Triggers — how these pipelines start</h1>
-  <p class="sub">A trigger that is not <b>Started</b> does not fire: its pipelines only run when invoked another way. Pipelines absent from every trigger here may still be started by other pipelines, or externally.</p>
+    <td><span class="badge ${t.state.toLowerCase()==="started"?"b-ok":"b-warn"}" title="State saved in the definition, not a live check">${esc(t.state)}</span></td>
+    <td>${t.startsPipelines.map(pl=>pipeLink(pl)+((t.parameters||{})[pl]?`<div class="mut">${Object.entries(t.parameters[pl]).map(([k,v])=>`${esc(k)} = <span class="ref">${esc(v)}</span>`).join("<br>")}</div>`:"")).join("")||'<span class="mut">starts nothing</span>'}</td>
+    <td class="mut">${esc(t.detail)||"—"}${(t.dependsOnTriggers||[]).length?`<br>waits on: ${t.dependsOnTriggers.map(d=>TRIDX[d]?go("trg",d,esc(d)):esc(d)).join(", ")}`:""}</td></tr>`).join("");
+  return `<h1>Triggers — how these pipelines start</h1>
+  <p class="sub">State is the one saved in the definition, not a live check of the factory. A trigger that is not <b>Started</b> does not fire: its pipelines only run when invoked another way. Pipelines absent from every trigger here may still be started by other pipelines, or externally.</p>
   <table class="t"><thead><tr><th>Trigger</th><th>Type</th><th>State</th><th>Starts</th><th>Schedule / event</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
@@ -576,62 +989,323 @@ function rTriggers(){
 let wFilter = "all";
 function rWarnings(){
   const ws = DATA.warnings;
-  if(!ws.length) return `${conveyor()}<h1>Warnings</h1><div class="empty"><b>Nothing flagged.</b><br>The static analysis found no unresolved references, dead resources, dynamic targets, opaque hops, or hygiene issues.</div>`;
+  if(!ws.length) return `<h1>Warnings</h1><div class="empty"><b>Nothing flagged.</b><br>The static analysis found no unresolved references, dead resources, dynamic targets, opaque hops, or hygiene issues.</div>`;
   const cats = [...new Set(ws.map(w=>w.category))].sort();
   const shown = ws.filter(w=>wFilter==="all"||w.category===wFilter);
-  return `${conveyor()}<h1>Warnings — read before changing anything</h1>
+  return `<h1>Warnings — read before changing anything</h1>
   <p class="sub">Everything the static analysis flagged: where lineage goes dark, what looks dead, what is fragile, and where this document's own picture is incomplete.</p>
   <div class="filter-row">
-    <button class="chip ${wFilter==="all"?"on":""}" onclick="wFilter='all';switchTab('warnings')">all (${ws.length})</button>
-    ${cats.map(c=>`<button class="chip ${wFilter===c?"on":""}" onclick="wFilter='${qarg(c)}';switchTab('warnings')">${esc(c)} (${ws.filter(w=>w.category===c).length})</button>`).join("")}
+    <button class="chip ${wFilter==="all"?"on":""}" data-go="wfilter" data-arg="all">all (${ws.length})</button>
+    ${cats.map(c=>`<button class="chip ${wFilter===c?"on":""}" data-go="wfilter" data-arg="${esc(c)}">${esc(c)} (${ws.filter(w=>w.category===c).length})</button>`).join("")}
   </div>
-  <table class="t"><thead><tr><th>Severity</th><th>Category</th><th>Detail</th></tr></thead><tbody>
-  ${shown.map(w=>`<tr><td><span class="badge ${w.severity==="warning"?"b-warn":"b-info"}">${esc(w.severity)}</span></td><td class="mut">${esc(w.category)}</td><td>${esc(w.message)}</td></tr>`).join("")}
-  </tbody></table>`;
+  ${shown.some(w=>w.severity!=="info")?"":`<div class="card"><b>No warnings.</b> <span class="mut">Only notes below: limits of what static analysis can see.</span></div>`}
+  ${wTable(shown.filter(w=>w.severity!=="info"))}
+  ${(()=>{ const infos = shown.filter(w=>w.severity==="info");
+    if(!infos.length) return "";
+    const groups = {}; infos.forEach(w=>(groups[w.category]=groups[w.category]||[]).push(w));
+    return `<h2>Notes <span class="mut" style="font-weight:400">(${infos.length}) — how far static analysis can see</span></h2>`
+      + Object.entries(groups).sort().map(([c,g])=>`<details id="wn-${slug(c)}"${wFilter===c?" open":""}><summary>${esc(c)} <span class="badge b-info">${g.length}</span></summary><div class="body table-wrap">${wTable(g,false)}</div></details>`).join("");
+  })()}`;
+}
+function wTable(ws, sev=true){
+  if(!ws.length) return "";
+  return `<div class="table-wrap"><table class="t"><thead><tr>${sev?"<th>Severity</th><th>Category</th>":""}<th>Detail</th></tr></thead><tbody>
+  ${ws.map(w=>`<tr>${sev?`<td><span class="badge ${w.severity==="warning"?"b-warn":"b-info"}">${esc(w.severity)}</span></td><td class="mut">${esc(w.category)}</td>`:""}<td>${esc(w.message)}</td></tr>`).join("")}
+  </tbody></table></div>`;
 }
 
-/* ============================================================ entities */
-function rEntities(){
-  const byKind = {};
-  for(const e of DATA.entities) (byKind[e.kind] = byKind[e.kind] || []).push(e);
-  const secs = Object.keys(byKind).sort().map(kind=>`
-    <h2>${esc(kind)} <span class="mut" style="font-weight:400">(${byKind[kind].length})</span></h2>
-    ${byKind[kind].slice().sort((a,b)=>a.label.localeCompare(b.label)).map(e=>{
-      const ep = e.endpoint;
-      const epBits = [["system",ep.system],["server",ep.server],["database",ep.database],
-        ["schema",ep.schema],["object",ep.object],["container",ep.container],
-        ["path",ep.path],["url",ep.url]].filter(([,v])=>v);
-      return `<details id="ent-${slug(e.key)}">
-        <summary><span style="font-family:var(--mono);font-size:.86rem">${esc(e.label)}</span>
-          ${e.dynamic?'<span class="badge b-warn">dynamic</span>':""}
-          <span class="mut" style="font-weight:400;margin-left:auto">${esc(e.roles.join(", "))}</span></summary>
-        <div class="body"><div class="act kv" style="border:0;margin:.4rem 0">
-          ${e.aliases.length?`<div class="k">Known as</div><div class="mut">${e.aliases.map(a=>DSIDX[a]?dsLink(a):esc(a)).join(", ")}</div>`:""}
-          ${epBits.length?`<div class="k">Endpoint</div><div class="mut">${epBits.map(([k,v])=>`<span class="ref" title="${esc(k)}">${esc(k)}: ${esc(v)}</span>`).join(" ")}</div>`:""}
-          ${e.detail?`<div class="k">Detail</div><div class="mut">${esc(e.detail)}</div>`:""}
-          <div class="k">Depends on</div><div>${e.upstream.map(entLink).join(", ")||'<span class="mut">— root —</span>'}</div>
-          <div class="k">Feeds</div><div>${e.downstream.map(entLink).join(", ")||'<span class="mut">— terminal —</span>'}</div>
-          <div class="k">Touched by</div><div class="mut">${e.referencedBy.map(esc).join("; ")}</div>
-        </div></div>
-      </details>`;}).join("")}`).join("");
-  return `${conveyor()}<h1>Entities — every table, file, proc, notebook and endpoint touched</h1>
-  <p class="sub">Canonicalised so the same table reached through two datasets is one entry. Endpoint fields follow the cross-tool contract (system/server/database/schema/object/path/url/container) so this JSON can later be joined with pbi-doc-gen output for end-to-end lineage.</p>
-  <input class="search" placeholder="Search entities…" oninput="fEnts(this.value)">
-  <div id="ent-list">${secs}</div>`;
+/* ============================================================ shared: csv */
+function csvCell(v){ v = v==null ? "" : String(v); return /[",\n\r]/.test(v) ? `"${v.replace(/"/g,'""')}"` : v; }
+function toCsv(cols, rows){ return [cols.map(c=>csvCell(c[0])).join(","), ...rows.map(r=>cols.map(c=>csvCell(c[1](r))).join(","))].join("\r\n"); }
+const CSV = {
+  objects: () => toCsv([["key",e=>e.key],["kind",e=>e.kind],["name",e=>e.label],["system",e=>e.endpoint.system],
+    ["server",e=>e.endpoint.server||e.endpoint.url],["database",e=>e.endpoint.database],["container",e=>e.endpoint.container],
+    ["schema",e=>e.endpoint.schema],["object",e=>e.endpoint.object],["path",e=>e.endpoint.path],["dynamic",e=>e.dynamic],
+    ["datasets",e=>e.aliases.join("; ")],["linked services",e=>(e.linkedServices||[]).join("; ")],
+    ["pipelines",e=>(e.pipelines||[]).join("; ")],["triggers",e=>(e.triggers||[]).join("; ")]], DATA.entities),
+  usage: () => toCsv([["object key",r=>r.key],["object",r=>r.label],["operation",r=>r.u.operation],["pipeline",r=>r.u.pipeline],
+    ["activity",r=>r.u.activity],["activity type",r=>r.u.type],["dynamic",r=>r.u.dynamic],["opaque",r=>r.u.opaque]],
+    DATA.entities.flatMap(e=>(e.usage||[]).map(u=>({key:e.key,label:e.label,u})))),
+  edges: () => toCsv([["sources",e=>e.sources.map(entLabel).join("; ")],["sinks",e=>e.sinks.map(entLabel).join("; ")],
+    ["mechanism",e=>e.mechanism],["pipeline",e=>e.pipeline],["activity",e=>e.activity],["dynamic",e=>e.dynamic],
+    ["opaque",e=>e.opaque],["detail",e=>e.detail]], DATA.lineageEdges),
+  issues: () => toCsv([["priority",i=>i.priority],["category",i=>i.category],["resource",i=>i.resource],
+    ["finding",i=>i.message],["why it matters",i=>i.why],["next action",i=>i.action]], DATA.issues||[]),
+};
+function downloadCsv(name){
+  const blob = new Blob(["\ufeff"+CSV[name]()], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = `${(DATA.title||"factory").replace(/[^\w.-]+/g,"_")}-${name}.csv`; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
 }
-function fEnts(q){
-  q=q.toLowerCase();
-  document.querySelectorAll("#ent-list details").forEach(d=>{
-    d.style.display = d.textContent.toLowerCase().includes(q)?"":"none";
+const csvBtn = (name, label) => `<button class="chip" data-go="csv" data-arg="${name}">Download ${label} (CSV)</button>`;
+
+/* ============================================================ data & sources: objects */
+let SEL_OBJ = null, OBJ_KIND = "physical";
+const PHYSICAL = new Set(["table","file_path","inline_dataset","dataset"]);
+const KIND_LABEL = {table:"Table", file_path:"File / folder", inline_dataset:"Inline source", dataset:"Unresolved dataset",
+  stored_procedure:"Procedure", notebook:"Notebook", code_artifact:"Code", endpoint:"Endpoint", linked_service:"Connection"};
+const opBadge = op => `<span class="badge ${({read:"b-src",write:"b-snk",delete:"b-bad",execute:"b-transform",call:"b-external"})[op]||"b-other"}">${esc(op)}</span>`;
+function objMatches(e){
+  if(OBJ_KIND==="physical") return PHYSICAL.has(e.kind);
+  if(OBJ_KIND==="code") return ["stored_procedure","notebook","code_artifact","endpoint"].includes(e.kind);
+  if(OBJ_KIND==="connections") return e.kind==="linked_service";
+  return true;
+}
+function rObjects(){
+  const shown = DATA.entities.filter(objMatches)
+    .sort((a,b)=>(PHYSICAL.has(b.kind)-PHYSICAL.has(a.kind)) || a.label.localeCompare(b.label));
+  const kinds = [["physical","Tables and files"],["code","Procedures, notebooks, endpoints"],["connections","Connections"],["all","Everything"]];
+  const rows = shown.map(e=>{
+    const ops = new Set((e.usage||[]).map(u=>u.operation));
+    return `<tr id="obj-${slug(e.key)}" class="${e.key===SEL_OBJ?"sel":""}">
+      <td>${go("obj", e.key, esc(e.label))}${e.dynamic?' <span class="badge b-warn">dynamic</span>':""}</td>
+      <td class="mut">${esc(entWhere(e)||"—")}</td>
+      <td class="mut">${esc(KIND_LABEL[e.kind]||e.kind)}</td>
+      <td>${[...ops].sort().map(opBadge).join(" ")||'<span class="mut">—</span>'}</td>
+      <td class="mut">${(e.pipelines||[]).length}</td></tr>`;}).join("");
+  return `<h1>Objects: what this factory reads and writes</h1>
+  <p class="sub">Physical tables, files and folders first, each identified by where it lives (server or storage account, database or container, name). Select one to see every pipeline and activity that reads, writes, deletes or runs it, and what starts them.</p>
+  <div class="filter-row">${kinds.map(([k,l])=>`<button class="chip ${OBJ_KIND===k?"on":""}" data-go="objkind" data-arg="${k}">${l}</button>`).join("")}
+    <span style="flex:1"></span>${csvBtn("objects","objects")} ${csvBtn("usage","usage")}</div>
+  <input class="search" placeholder="Filter by name, server, database, pipeline…" oninput="fObjects(this.value)" aria-label="Filter objects">
+  <div class="split">
+    <div class="table-wrap"><table class="t" id="obj-table"><thead><tr><th>Object</th><th>Where</th><th>Kind</th><th>Operations</th><th>Pipelines</th></tr></thead>
+      <tbody>${rows||'<tr><td colspan="5" class="mut">Nothing of this kind in the input.</td></tr>'}</tbody></table></div>
+    <aside class="panel" id="obj-panel" aria-live="polite">${objectPanel()}</aside>
+  </div>`;
+}
+function fObjects(q){
+  q = q.toLowerCase();
+  document.querySelectorAll("#obj-table tbody tr").forEach(tr=>{
+    const e = EIDX[[...EIDX_KEYS].find(k=>"obj-"+slug(k)===tr.id)];
+    const hay = e ? [e.label, entWhere(e), ...(e.pipelines||[]), ...e.aliases].join(" ").toLowerCase() : tr.textContent.toLowerCase();
+    tr.style.display = hay.includes(q) ? "" : "none";
   });
+}
+const EIDX_KEYS = new Set(Object.keys(EIDX));
+function renderObjectPanel(){
+  const p = document.getElementById("obj-panel");
+  if(!p){ switchTab("objects"); return; }
+  p.innerHTML = objectPanel();
+  document.querySelectorAll("#obj-table tbody tr").forEach(tr=>tr.classList.toggle("sel", tr.id==="obj-"+slug(SEL_OBJ)));
+  p.focus && p.scrollTo(0,0);
+}
+function objectPanel(){
+  const e = EIDX[SEL_OBJ];
+  if(!e) return `<div class="mut">Select an object to see its detail.</div>`;
+  const ep = e.endpoint;
+  const where = [["System",ep.system],["Server / account",ep.server||ep.url],["Database",ep.database],["Container",ep.container],
+    ["Schema",ep.schema],["Object",ep.object],["Path",ep.path]].filter(([,v])=>v);
+  const dsSources = e.aliases.filter(a=>DSIDX[a]).map(a=>`${dsLink(a)}${DSIDX[a].source?` <span class="mut">${esc(DSIDX[a].source)}</span>`:""}`);
+  const usage = (e.usage||[]).map(u=>`<tr><td>${opBadge(u.operation)}</td><td>${u.pipeline?pipeLink(u.pipeline):(u.dataflow?dfLink(u.dataflow):"—")}<div class="mut">${esc(u.activity||"")}${u.type?` · ${esc(u.type)}`:""}</div></td>
+    <td>${u.dynamic?'<span class="badge b-warn">dynamic</span>':""}${u.opaque?'<span class="badge b-info">opaque</span>':""}</td></tr>`).join("");
+  return `<div class="eyebrow">${esc(KIND_LABEL[e.kind]||e.kind)}</div>
+  <h2 style="margin-top:.2rem">${esc(e.label)}</h2>
+  ${e.dynamic?`<p><span class="badge b-warn">dynamic</span> <span class="mut">Resolved at runtime; this is what can be known before the run.</span></p>`:""}
+  ${where.length?`<div class="kvl">${where.map(([k,v])=>`<div class="k">${k}</div><div>${esc(v)}</div>`).join("")}</div>`:`<p class="mut">Location not stated in the definitions.</p>`}
+  <h3>Used by</h3>
+  ${usage?`<table class="t"><tbody>${usage}</tbody></table>`:`<p class="mut">No activity in this input uses it.</p>`}
+  <h3>Started by</h3><p>${(e.triggers||[]).map(t=>TRIDX[t]?go("trg",t,esc(t)):esc(t)).join(", ")||'<span class="mut">No trigger in this input starts the pipelines that use it.</span>'}</p>
+  ${(e.linkedServices||[]).length?`<h3>Connection</h3><p>${e.linkedServices.map(lsLink).join(", ")}</p>`:""}
+  ${dsSources.length?`<h3>Defined by</h3><p>${dsSources.join("<br>")}</p>`:""}
+  <h3>Depends on</h3><p>${e.upstream.map(entLink).join(", ")||'<span class="mut">Nothing in this factory (an external input).</span>'}</p>
+  <h3>Feeds</h3><p>${e.downstream.map(entLink).join(", ")||'<span class="mut">Nothing in this factory (a final output).</span>'}</p>
+  <p style="margin-top:1rem"><button class="chip on" data-go="impact" data-arg="${esc(e.key)}">Show impact of a change</button></p>`;
+}
+
+/* ============================================================ impact */
+let IMPACT = null;
+/* Walk movement edges from a set of objects. An edge that is dynamic or
+   opaque makes everything reached through it "possible" rather than confirmed. */
+function walk(startKeys, forward){
+  const state = new Map();   // key -> "confirmed" | "possible"
+  const queue = startKeys.map(k=>[k,"confirmed"]);
+  const pipes = new Map();
+  const better = (a,b)=> a==="confirmed"||b==="confirmed" ? "confirmed" : "possible";
+  while(queue.length){
+    const [k, how] = queue.shift();
+    for(const e of DATA.lineageEdges){
+      const from = forward ? e.sources : e.sinks, to = forward ? e.sinks : e.sources;
+      if(!from.includes(k)) continue;
+      const h = (how==="possible"||e.dynamic||e.opaque) ? "possible" : "confirmed";
+      if(e.pipeline && PIDX[e.pipeline]) pipes.set(e.pipeline, pipes.has(e.pipeline)?better(pipes.get(e.pipeline),h):h);
+      for(const t of to){
+        if(t===k || startKeys.includes(t)) continue;
+        const prev = state.get(t);
+        const next = prev ? better(prev,h) : h;
+        if(prev!==next){ state.set(t,next); queue.push([t,next]); }
+      }
+    }
+  }
+  return {objects: state, pipelines: pipes};
+}
+function impactOf(sel){
+  let start = [], label = "", kind = "object";
+  if(sel && sel.startsWith("pipeline:")){
+    const p = PIDX[sel.slice(9)]; if(!p) return null;
+    start = p.effectiveWrites; label = p.name; kind = "pipeline";
+  } else if(EIDX[sel]){ start = [sel]; label = EIDX[sel].label; }
+  else return null;
+  const down = walk(start, true), up = walk(start, false);
+  // Pipelines that read anything affected are affected too (the object changes under them).
+  const affected = new Map(down.pipelines);
+  const reached = new Map([...start.map(k=>[k,"confirmed"]), ...down.objects]);
+  for(const [k,how] of reached){
+    for(const u of (EIDX[k]?.usage||[])){
+      if(!u.pipeline || (kind==="pipeline" && u.pipeline===label)) continue;
+      const h = (how==="possible"||u.dynamic||u.opaque) ? "possible" : "confirmed";
+      affected.set(u.pipeline, affected.get(u.pipeline)==="confirmed" ? "confirmed" : h);
+    }
+  }
+  if(kind==="pipeline") affected.delete(label);
+  const triggers = new Map();
+  for(const [pl,how] of affected){
+    const p = PIDX[pl]; if(!p) continue;
+    for(const t of p.startedBy||[]) triggers.set(t, triggers.get(t)==="confirmed" ? "confirmed" : how);
+    for(const o of p.orchestratedBy||[]) if(!affected.has(o)) affected.set(o, how);
+  }
+  return {label, kind, start, down: down.objects, up: up.objects, affected, triggers};
+}
+function impactGraph(r){
+  const keep = new Set([...r.start, ...r.up.keys(), ...r.down.keys()]);
+  if(keep.size<2) return "";
+  const nodes = [...keep].filter(k=>EIDX[k]).map(k=>{ const e = EIDX[k];
+    const how = r.down.get(k) || r.up.get(k) || "confirmed";
+    return {id:k, kind:(r.start.includes(k)?"selected · ":"")+(KIND_LABEL[e.kind]||e.kind), label:e.label, sub:entWhere(e),
+      cls: r.start.includes(k) ? "n-focus" : (r.up.has(k)?"n-src":"n-snk")+(how==="possible"?" n-possible":""), go:"obj", arg:k}; });
+  const edges = DATA.lineageEdges.flatMap(e=>e.sources.flatMap(s=>e.sinks.filter(t=>keep.has(s)&&keep.has(t)).map(t=>({from:s, to:t, cls:e.opaque?"e-opaque":e.dynamic?"e-dyn":"", title:`${e.pipeline} :: ${e.activity}`}))));
+  return legend([["n-src","upstream"],["n-focus","selected"],["n-snk","downstream"],["n-possible","possible"]]) + graphSVG(nodes, edges, {label:"Impact diagram"});
+}
+const howBadge = h => h==="confirmed" ? '<span class="badge b-ok">confirmed</span>' : '<span class="badge b-warn">possible</span>';
+function rImpact(){
+  const options = [
+    ...DATA.entities.filter(e=>PHYSICAL.has(e.kind)||e.kind==="stored_procedure").sort((a,b)=>a.label.localeCompare(b.label))
+      .map(e=>[e.key, `${e.label}${entWhere(e)?"  ·  "+entWhere(e):""}`]),
+    ...DATA.pipelines.map(p=>["pipeline:"+p.name, "Pipeline: "+p.name])];
+  if(!IMPACT && options.length) IMPACT = options[0][0];
+  const r = impactOf(IMPACT);
+  const list = (m, fn) => m.size ? `<ul class="plain">${[...m].sort((a,b)=>(a[1]>b[1])-(a[1]<b[1])).map(([k,h])=>`<li>${howBadge(h)} ${fn(k)}</li>`).join("")}</ul>` : '<p class="mut">None in this input.</p>';
+  const opaqueHere = r ? [...r.affected.keys()].filter(pl=>PIDX[pl] && (PIDX[pl].opaqueCount||0)>0) : [];
+  return `<h1>Impact: what changes if this changes</h1>
+  <p class="sub">Choose a table, file or pipeline. <b>Confirmed</b> means a static data movement in the definitions leads there. <b>Possible</b> means the path passes through a runtime-resolved target or code ADF cannot see (notebook, procedure, web call), so it may or may not be affected. Nothing outside the supplied input is shown.</p>
+  <label class="field"><span>Object or pipeline</span>
+  <select id="impact-sel" onchange="IMPACT=this.value;switchTab('impact')">${options.map(([k,l])=>`<option value="${esc(k)}"${k===IMPACT?" selected":""}>${esc(l)}</option>`).join("")}</select></label>
+  ${!r?'<div class="empty">Nothing to show.</div>':`
+  <div class="impact-grid">
+    <div class="card"><div class="eyebrow">Depends on (upstream)</div>${list(r.up, entLink)}</div>
+    <div class="card focus"><div class="eyebrow">${r.kind==="pipeline"?"Pipeline":"Selected object"}</div><h2 style="margin:.2rem 0">${esc(r.label)}</h2>
+      ${r.kind==="pipeline"?`<p class="mut">Starts from what it writes: ${r.start.map(entLink).join(", ")||"nothing"}</p>`:
+        `<p>${go("obj", IMPACT, "Open object detail")}</p>`}</div>
+    <div class="card"><div class="eyebrow">Feeds (downstream)</div>${list(r.down, entLink)}</div>
+  </div>
+  ${impactGraph(r)}
+  <div class="impact-grid two">
+    <div class="card"><div class="eyebrow">Affected pipelines</div>${list(r.affected, pipeLink)}</div>
+    <div class="card"><div class="eyebrow">Triggers that start them</div>${list(r.triggers, t=>TRIDX[t]?go("trg",t,esc(t)):esc(t))}</div>
+  </div>
+  ${opaqueHere.length?`<div class="card note"><b>Look inside the code too.</b> ${opaqueHere.map(pipeLink).join(", ")} ${opaqueHere.length>1?"run":"runs"} notebooks, procedures or external calls whose own reads and writes are not visible here.</div>`:""}`}`;
+}
+
+/* ============================================================ review issues */
+let ISSUE_FILTER = "all";
+const PRIO = {high:"b-bad", medium:"b-warn", low:"b-info"};
+function resourceLink(name){
+  if(!name) return "";
+  if(name.includes("::")){ const [pl, act] = name.split("::"); return `${pipeLink(pl)} <span class="mut">:: ${esc(act)}</span>`; }
+  if(PIDX[name]) return pipeLink(name);
+  if(DSIDX[name]) return dsLink(name);
+  if(LSIDX[name]) return lsLink(name);
+  if(DFIDX[name]) return dfLink(name);
+  if(TRIDX[name]) return go("trg", name, esc(name));
+  const e = DATA.entities.find(x=>x.label===name); if(e) return entLink(e.key);
+  return `<span class="ref">${esc(name)}</span>`;
+}
+function rIssues(){
+  const all = DATA.issues||[];
+  const shown = all.filter(i=>ISSUE_FILTER==="all"||i.priority===ISSUE_FILTER);
+  const counts = p => all.filter(i=>i.priority===p).length;
+  return `<h1>Review issues: what to investigate first</h1>
+  <p class="sub">Findings ranked by how much they affect trust in the factory or this document, each with why it matters and a next step. Limits of static analysis (runtime targets, opaque code, retries) are under <b>All findings and notes</b>.</p>
+  <div class="filter-row">${["all","high","medium","low"].map(p=>`<button class="chip ${ISSUE_FILTER===p?"on":""}" data-go="issuefilter" data-arg="${p}">${p} (${p==="all"?all.length:counts(p)})</button>`).join("")}
+    <span style="flex:1"></span>${csvBtn("issues","issues")}</div>
+  ${missing.length?`<div class="card note"><b>${missing.length} referenced object(s) were not supplied.</b> Export them to complete this document: ${missing.slice(0,6).map(r=>`<span class="ref">${esc(r.kind)} ${esc(r.name)}</span>`).join(" ")}${missing.length>6?" …":""}</div>`:""}
+  ${shown.length?shown.map(i=>`<div class="card issue">
+    <div class="issue-head"><span class="badge ${PRIO[i.priority]}">${esc(i.priority)}</span> <b>${esc(i.category)}</b> ${i.resource?"· "+resourceLink(i.resource):""}</div>
+    <p style="margin:.35rem 0">${esc(i.message)}</p>
+    ${i.why?`<p class="mut"><b>Why it matters:</b> ${esc(i.why)}</p>`:""}
+    <p class="mut"><b>Next step:</b> ${esc(i.action)}</p></div>`).join("")
+    :`<div class="empty"><b>Nothing to review at this priority.</b></div>`}`;
+}
+
+/* ============================================================ factory details */
+const DETAIL_FIELDS = {environment:"Environment (e.g. Production)", owner:"Owner or team",
+  factory:"Factory resource (subscription / resource group / name)",
+  sourceLocation:"Source location (Git repository and branch, or export path)",
+  runbook:"Runbook or support page", folder:"Home page group (e.g. Finance / Daily)", notes:"Notes"};
+const SECRETISH = /(password|pwd|secret|accountkey|sharedaccess|token|apikey)\s*=|[?&](sig|token|code|key|apikey)=|bearer\s+\S{8,}|:\/\/[^\/\s@]+@/i;
+function readDetails(){ try{ return JSON.parse(document.getElementById("adf-documentation-details")?.textContent||"{}")||{}; }catch(e){ return {}; } }
+let DETAILS = Object.assign(Object.fromEntries(Object.keys(DETAIL_FIELDS).map(k=>[k,""])), readDetails());
+let SAVED_DETAILS = JSON.stringify(DETAILS);
+function captureDetails(){
+  for(const k of Object.keys(DETAIL_FIELDS)){ const el = document.getElementById("det-"+k); if(el) DETAILS[k] = el.value; }
+  const bad = Object.entries(DETAILS).filter(([,v])=>SECRETISH.test(v)).map(([k])=>DETAIL_FIELDS[k]);
+  const n = Object.keys(DETAIL_FIELDS).filter(k=>DETAILS[k]!==JSON.parse(SAVED_DETAILS)[k]).length;
+  const bar = document.getElementById("det-savebar"), st = document.getElementById("det-status"), btn = document.getElementById("det-save");
+  if(!bar) return;
+  bar.classList.toggle("dirty", n>0);
+  btn.disabled = bad.length>0;
+  st.textContent = bad.length ? `Remove what looks like a secret from: ${bad.join(", ")}. Record where the secret lives instead.`
+    : n ? `${n} unsaved ${n===1?"change":"changes"}. Download the updated HTML and replace the original file to keep them.`
+        : "No unsaved changes. Details are kept when this document is regenerated over the same file.";
+}
+function saveDetailsHtml(){
+  captureDetails();
+  if(document.getElementById("det-save").disabled) return;
+  const clone = document.documentElement.cloneNode(true);
+  clone.querySelector("#adf-documentation-details").textContent =
+    JSON.stringify(DETAILS).replace(/</g,"\\u003c").replace(/>/g,"\\u003e").replace(/&/g,"\\u0026");
+  clone.querySelector("#main").innerHTML = ""; clone.querySelector("#nav").innerHTML = "";
+  const blob = new Blob(["<!DOCTYPE html>\n"+clone.outerHTML], {type:"text/html;charset=utf-8"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = DATA.documentationFilename || "factory.html"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  SAVED_DETAILS = JSON.stringify(DETAILS); captureDetails();
+  document.getElementById("det-status").textContent = "Downloaded. Replace the original HTML with the downloaded file to keep these details.";
+}
+function rDetails(){
+  const c = DATA.coverage||{};
+  const field = k => k==="notes"
+    ? `<label class="field wide"><span>${esc(DETAIL_FIELDS[k])}</span><textarea id="det-${k}" rows="4" oninput="captureDetails()">${esc(DETAILS[k])}</textarea></label>`
+    : `<label class="field"><span>${esc(DETAIL_FIELDS[k])}</span><input id="det-${k}" value="${esc(DETAILS[k])}" oninput="captureDetails()"></label>`;
+  return `<h1>Factory details</h1>
+  <p class="sub">Who owns this factory, where its source lives and how to support it. These details are kept in this file, survive regeneration over the same file, and are shown on the documentation home. Record references only: never passwords, keys or tokens.</p>
+  <div class="card details-grid">${Object.keys(DETAIL_FIELDS).map(field).join("")}</div>
+  <div id="det-savebar" class="savebar"><p id="det-status" role="status"></p><button class="primary-btn" id="det-save" onclick="saveDetailsHtml()">Download updated HTML</button></div>
+  <h2>How this document was generated</h2>
+  <div class="card kvl">
+    <div class="k">Generated</div><div>${esc(DATA.generated)} by ${esc(DATA.generator)} (payload version ${esc(DATA.schemaVersion)})</div>
+    <div class="k">Input</div><div>${esc((c.inputFormats||[]).join(", ")||"unknown")} · ${esc(c.jsonFiles)} JSON file(s)${c.skippedFiles?` · ${esc(c.skippedFiles)} unreadable`:""}</div>
+    <div class="k">Mode</div><div>${esc(MODE)}</div>
+    <div class="k">Secrets withheld</div><div>${esc(DATA.redactions||0)}</div>
+    <div class="k">Run history</div><div class="mut">Not available: this document is generated from definitions, not from runs.</div>
+  </div>
+  <h2>Where each definition came from</h2>
+  <div class="table-wrap"><table class="t"><thead><tr><th>Kind</th><th>Name</th><th>Source file</th></tr></thead><tbody>
+  ${[["pipeline",DATA.pipelines,pipeLink],["data flow",DATA.dataflows,dfLink],["dataset",DATA.datasets,dsLink],["linked service",DATA.linkedServices,lsLink],["trigger",DATA.triggers,n=>go("trg",n,esc(n))]]
+    .flatMap(([k,list,link])=>list.map(x=>`<tr><td class="mut">${k}</td><td>${link(x.name)}</td><td class="mut">${esc(x.source||"—")}</td></tr>`)).join("")}
+  </tbody></table></div>`;
 }
 
 /* ============================================================ boot */
 const RENDER = {overview:rOverview, orchestration:rOrchestration, lineage:rLineage,
   pipelines:rPipelines, dataflows:rDataflows, datasets:rDatasets, linked:rLinked,
-  triggers:rTriggers, warnings:rWarnings, entities:rEntities};
+  triggers:rTriggers, warnings:rWarnings, objects:rObjects, impact:rImpact,
+  issues:rIssues, details:rDetails};
 buildNav();
 switchTab("overview");
+const _render = RENDER.details;
+RENDER.details = () => { const h = _render(); requestAnimationFrame(captureDetails); return h; };
 </script>
 </body>
 </html>

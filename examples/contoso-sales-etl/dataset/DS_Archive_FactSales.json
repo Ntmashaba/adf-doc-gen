@@ -1,0 +1,14 @@
+{
+  "name": "DS_Archive_FactSales",
+  "properties": {
+    "type": "AzureSqlTable",
+    "linkedServiceName": {
+      "referenceName": "LS_ArchiveDW",
+      "type": "LinkedServiceReference"
+    },
+    "typeProperties": {
+      "schema": "dbo",
+      "table": "FactSales"
+    }
+  }
+}
