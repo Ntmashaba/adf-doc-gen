@@ -77,6 +77,14 @@ class Details(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_details({"password": "x"})
 
+    def test_output_dir_for_one_factory(self):
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, tmp)
+        quiet(generate_docs.main, [str(EXAMPLE), "--output-dir", str(tmp / "docs"), "--json", "--csv"])
+        self.assertTrue((tmp / "docs" / "contoso-sales-etl_docs.html").exists())
+        self.assertTrue((tmp / "docs" / "contoso-sales-etl_docs.json").exists())
+        self.assertTrue((tmp / "docs" / "contoso-sales-etl_docs-csv" / "objects.csv").exists())
+
     def test_csv_inventories(self):
         tmp = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, tmp)

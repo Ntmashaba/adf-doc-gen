@@ -215,7 +215,7 @@ def main(argv=None) -> int:
                     help="document every factory in a folder (each subfolder or ARM template) "
                          "and build the documentation home")
     ap.add_argument("--output-dir", metavar="FOLDER",
-                    help="with --batch: where documents go (default: <FOLDER>/documentation)")
+                    help="folder for the outputs; with --batch the default is <FOLDER>/documentation")
     ap.add_argument("--hub", metavar="FOLDER",
                     help="rebuild the documentation home (adf-home.html) from the HTML files in a folder")
     ap.add_argument("--bridge", nargs=2, metavar=("ADF_DOCS", "PBI_DOCS"),
@@ -244,6 +244,13 @@ def main(argv=None) -> int:
     stem = in_path.stem if in_path.is_file() else in_path.name
     title = args.title or stem.replace("_", " ").replace("-", " ").strip() or "Data Factory"
     out_html = Path(args.output) if args.output else Path(f"{stem}_docs.html")
+    if args.output_dir:
+        # --output-dir places the document (and its companions) in that folder;
+        # a relative -o name is kept, inside it.
+        if out_html.is_absolute():
+            ap.error("use either an absolute -o path or --output-dir, not both")
+        out_html = Path(args.output_dir) / out_html
+    out_html.parent.mkdir(parents=True, exist_ok=True)
     details = None
     if args.details:
         try:

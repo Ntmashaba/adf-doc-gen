@@ -88,7 +88,7 @@ python generate_docs.py --bridge <adf docs> <pbi-doc-gen docs> [-o bridge.html]
 | `--csv [FOLDER]` | also write `objects.csv`, `usage.csv`, `edges.csv` and `issues.csv` (default folder `<output>-csv`) |
 | `--details FILE` | factory details to embed (see *Factory details* below) |
 | `--batch FOLDER` | document every factory in a folder and build the documentation home |
-| `--output-dir` | with `--batch`: where documents go (default `<FOLDER>/documentation`) |
+| `--output-dir` | folder for all outputs (a relative `-o` name goes inside it); with `--batch` the default is `<FOLDER>/documentation` |
 | `--hub FOLDER` | rebuild the documentation home from the HTML files in a folder |
 | `--bridge ADF PBI` | match Power BI sources to the pipelines that write them |
 
