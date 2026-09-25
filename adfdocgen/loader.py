@@ -24,6 +24,23 @@ from collections import defaultdict
 from typing import Any, Dict, Tuple
 
 KINDS = ("pipeline", "dataset", "dataflow", "linkedservice", "trigger")
+# Resources the analysis does not document as data objects, kept so they are
+# not mistaken for linked services (an integration runtime also has a type and
+# typeProperties) and so references to them can resolve.
+SUPPORT_KINDS = ("integrationruntime", "credential", "factory", "managedvirtualnetwork",
+                 "managedprivateendpoint", "globalparameter")
+# ADF Git repositories keep each resource type in its own folder.
+GIT_FOLDERS = {"pipeline": "pipeline", "dataset": "dataset", "dataflow": "dataflow",
+               "linkedservice": "linkedservice", "trigger": "trigger",
+               "integrationruntime": "integrationruntime", "credential": "credential",
+               "factory": "factory", "managedvirtualnetwork": "managedvirtualnetwork",
+               "managedprivateendpoint": "managedprivateendpoint"}
+ARM_TYPES = (("/pipelines", "pipeline"), ("/datasets", "dataset"), ("/dataflows", "dataflow"),
+             ("/linkedservices", "linkedservice"), ("/triggers", "trigger"),
+             ("/integrationruntimes", "integrationruntime"), ("/credentials", "credential"),
+             ("/managedvirtualnetworks", "managedvirtualnetwork"),
+             ("/managedprivateendpoints", "managedprivateendpoint"),
+             ("/globalparameters", "globalparameter"))
 
 
 def load_json(path: str) -> Any:
@@ -41,7 +58,15 @@ def classify_resource(doc: dict, fallback_name: str, folder_hint: str = "") -> T
     """
     name = doc.get("name", fallback_name)
     props = doc.get("properties", doc)
+    if not isinstance(props, dict):
+        return "unknown", name, {}
     rtype = (doc.get("type") or "").lower()
+    folder = GIT_FOLDERS.get(folder_hint.lower().rstrip("s"))
+    if folder:
+        return folder, name, props
+    for suffix, kind in ARM_TYPES:
+        if rtype.endswith(suffix):
+            return kind, name, props
     if "pipelines" in rtype or "activities" in props:
         return "pipeline", name, props
     if "dataflows" in rtype or props.get("type") in ("MappingDataFlow", "WranglingDataFlow", "Flowlet"):
@@ -74,9 +99,9 @@ def collect_inputs(input_path: str) -> Dict[str, Dict[str, dict]]:
              or re.search(r"/([^/'\)\]]+)'?\)?\]?$", raw))
         name = m.group(1) if m else raw
         props = res.get("properties", {})
-        for suffix, kind in (("/pipelines", "pipeline"), ("/datasets", "dataset"),
-                             ("/dataflows", "dataflow"), ("/linkedservices", "linkedservice"),
-                             ("/triggers", "trigger")):
+        if not isinstance(props, dict):
+            props = {}
+        for suffix, kind in ARM_TYPES:
             if rtype.endswith(suffix):
                 store[kind][name] = props
         for sub in res.get("resources", []) or []:
@@ -105,7 +130,7 @@ def collect_inputs(input_path: str) -> Dict[str, Dict[str, dict]]:
     else:
         ingest_doc(load_json(input_path), os.path.basename(input_path))
 
-    for kind in KINDS + ("unknown",):
+    for kind in KINDS + SUPPORT_KINDS + ("unknown",):
         store.setdefault(kind, {})
     store["__skipped__"] = {f: {"error": e} for f, e in skipped}
     return store

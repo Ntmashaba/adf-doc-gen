@@ -124,6 +124,26 @@ def harvest_sql(sql_text: str) -> Tuple[List[str], List[str], List[str]]:
 # Small helpers
 # ---------------------------------------------------------------------------
 
+_ARM_PARAMETER = re.compile(r"^\[\s*parameters\(\s*'([^']+)'\s*\)\s*\]$")
+
+
+def arm_parameter(value) -> Optional[str]:
+    """The parameter name when a value is exactly "[parameters('name')]"."""
+    m = _ARM_PARAMETER.match(value.strip()) if isinstance(value, str) else None
+    return m.group(1) if m else None
+
+
+def obj(value) -> dict:
+    """A JSON object, or {} when an ARM expression string ("[parameters('x')]")
+    or anything else stands where an object is expected."""
+    return value if isinstance(value, dict) else {}
+
+
+def lst(value) -> list:
+    """A JSON array, or [] when an ARM expression or other value stands in."""
+    return value if isinstance(value, list) else []
+
+
 def as_text(value: Any) -> str:
     """Render a typeProperties value, which may be a literal or an ADF Expression."""
     if value is None:
@@ -222,7 +242,7 @@ def friendly_system(ls_type: str) -> str:
 
 def describe_linked_service(name: str, props: dict) -> dict:
     """Type + target of a linked service. Never returns secret values."""
-    tp = props.get("typeProperties", {}) or {}
+    tp = obj(props.get("typeProperties"))
     ls_type = props.get("type", "")
     out = {
         "name": name,
@@ -233,7 +253,7 @@ def describe_linked_service(name: str, props: dict) -> dict:
         "keyVault": False,
         "inlineCredential": False,
         "parameterized": bool(props.get("parameters")),
-        "parameters": sorted((props.get("parameters") or {}).keys()),
+        "parameters": sorted(obj(props.get("parameters")).keys()),
         "detail": {},
     }
 
@@ -290,15 +310,15 @@ def describe_linked_service(name: str, props: dict) -> dict:
 
 def describe_dataset(name: str, props: dict) -> dict:
     """Resolve a dataset definition to a normalised physical endpoint."""
-    tp = props.get("typeProperties", {}) or {}
+    tp = obj(props.get("typeProperties"))
     ds_type = props.get("type", "")
-    ls = (props.get("linkedServiceName") or {}).get("referenceName", "")
+    ls = obj(props.get("linkedServiceName")).get("referenceName", "")
     out = {
         "name": name,
         "type": ds_type,
         "linkedService": ls,
         "parameterized": bool(props.get("parameters")),
-        "parameters": sorted((props.get("parameters") or {}).keys()),
+        "parameters": sorted(obj(props.get("parameters")).keys()),
         "endpoint": dict(EMPTY_ENDPOINT),
         "display": "",       # human-readable resolved target
         "dynamic": False,
@@ -316,7 +336,7 @@ def describe_dataset(name: str, props: dict) -> dict:
             ep["schema"], ep["object"] = split_table(table)
         out["display"] = f"{ep['schema']}.{ep['object']}" if ep["schema"] else (ep["object"] or table)
 
-    loc = tp.get("location", {}) or {}
+    loc = obj(tp.get("location"))
     container = next((as_text(loc[k]) for k in ("fileSystem", "container", "bucketName")
                       if loc.get(k)), "")
     path_bits = [as_text(loc.get("folderPath")), as_text(loc.get("fileName"))]
@@ -456,17 +476,17 @@ def trace_dataflow(steps: List[dict], sinks: List[str]) -> List[Tuple[str, List[
 
 def describe_trigger(name: str, props: dict) -> dict:
     ttype = props.get("type", "?")
-    tp = props.get("typeProperties", {}) or {}
+    tp = obj(props.get("typeProperties"))
     detail = []
-    rec = tp.get("recurrence", {}) or {}
+    rec = obj(tp.get("recurrence"))
     if rec:
         detail.append(f"every {rec.get('interval','?')} {rec.get('frequency','?')}"
                       + (f" from {rec.get('startTime')}" if rec.get("startTime") else ""))
     if ttype == "TumblingWindowTrigger":
         detail.append(f"tumbling {tp.get('interval','?')} {tp.get('frequency','?')}")
-        for dep in tp.get("dependsOn", []) or []:
+        for dep in lst(tp.get("dependsOn")):
             detail.append("waits on trigger: "
-                          + (dep.get("referenceTrigger") or {}).get("referenceName", "?"))
+                          + obj(dep.get("referenceTrigger")).get("referenceName", "?"))
     if ttype in ("BlobEventsTrigger", "CustomEventsTrigger"):
         detail.append("event: " + squeeze(json.dumps(
             {k: tp[k] for k in ("blobPathBeginsWith", "blobPathEndsWith", "events", "scope")
@@ -474,8 +494,8 @@ def describe_trigger(name: str, props: dict) -> dict:
     return {
         "name": name, "type": ttype,
         "state": props.get("runtimeState", "") or "Unknown",
-        "startsPipelines": [(p.get("pipelineReference") or {}).get("referenceName", "?")
-                            for p in props.get("pipelines", []) or []],
+        "startsPipelines": [obj(p.get("pipelineReference")).get("referenceName", "?")
+                            for p in lst(props.get("pipelines"))],
         "detail": " | ".join(detail),
     }
 
@@ -496,6 +516,10 @@ class Analyzer:
 
     def __init__(self, store: Dict[str, Dict[str, dict]]):
         self.store = store
+        # ADF resource names are case-insensitive: SinkDataSet and SinkDataset
+        # are one dataset. References resolve to the defined spelling.
+        self._names = {kind: {n.lower(): n for n in names} for kind, names in store.items()
+                       if isinstance(names, dict)}
         self.ds_info = {n: describe_dataset(n, p) for n, p in store["dataset"].items()}
         self.ls_info = {n: describe_linked_service(n, p) for n, p in store["linkedservice"].items()}
         self.pipelines: List[dict] = []
@@ -539,12 +563,17 @@ class Analyzer:
                     ent["endpoint"][k] = v
         return key
 
+    def named(self, store_kind: str, name: str) -> str:
+        """The defined spelling of a referenced resource name."""
+        return self._names.get(store_kind, {}).get((name or "").lower(), name)
+
     def track_ref(self, kind: str, name: str, ref: str) -> None:
+        name = self.named(self.RESOLVABLE.get(kind, kind), name)
         if name:
             self.refs[(kind, name)].add(ref)
 
     def _ls_endpoint(self, ls_name: str) -> dict:
-        info = self.ls_info.get(ls_name)
+        info = self.ls_info.get(self.named("linkedservice", ls_name))
         if not info:
             return dict(EMPTY_ENDPOINT)
         ep = dict(EMPTY_ENDPOINT)
@@ -557,12 +586,13 @@ class Analyzer:
     def dataset_node(self, ds_name: str, role: str, ref: str,
                      params: Optional[dict] = None) -> str:
         """Resolve a dataset reference to a canonical physical node."""
+        ds_name = self.named("dataset", ds_name)
         self.track_ref("dataset", ds_name, ref)
         info = self.ds_info.get(ds_name)
         if not info:
             return self.node("dataset", ds_name, role, ref, "definition not supplied")
 
-        ls = info["linkedService"]
+        ls = self.named("linkedservice", info["linkedService"])
         if ls:
             self.track_ref("linked_service", ls, ref)
             self.node("linked_service", ls, role, ref,
@@ -641,18 +671,18 @@ class Analyzer:
 
     def walk_pipeline(self, name: str, props: dict) -> dict:
         acts: List[dict] = []
-        self._walk(name, props.get("activities", []) or [], "(root)", 0, acts)
+        self._walk(name, lst(props.get("activities")), "(root)", 0, acts)
         cats: Dict[str, int] = defaultdict(int)
         for a in acts:
             cats[a["category"]] += 1
         return {
             "name": name,
             "description": squeeze(props.get("description"), 400) or None,
-            "folder": ((props.get("folder") or {}).get("name")) or None,
+            "folder": (obj(props.get("folder")).get("name")) or None,
             "parameters": {k: (v or {}).get("type", "?")
-                           for k, v in (props.get("parameters") or {}).items()},
+                           for k, v in obj(props.get("parameters")).items()},
             "variables": {k: (v or {}).get("type", "?")
-                          for k, v in (props.get("variables") or {}).items()},
+                          for k, v in obj(props.get("variables")).items()},
             "concurrency": props.get("concurrency"),
             "activityCount": len(acts),
             "categories": dict(sorted(cats.items())),
@@ -671,21 +701,21 @@ class Analyzer:
 
     def _recurse(self, pipeline, act, scope, depth, sink_list) -> None:
         name, atype = act.get("name", "?"), act.get("type", "?")
-        tp = act.get("typeProperties", {}) or {}
+        tp = obj(act.get("typeProperties"))
         base = name if scope == "(root)" else f"{scope} > {name}"
         if atype in ("ForEach", "Until"):
-            self._walk(pipeline, tp.get("activities", []) or [],
+            self._walk(pipeline, lst(tp.get("activities")),
                        f"{base} [{atype}]", depth + 1, sink_list)
         elif atype == "IfCondition":
-            self._walk(pipeline, tp.get("ifTrueActivities", []) or [],
+            self._walk(pipeline, lst(tp.get("ifTrueActivities")),
                        f"{base} [True]", depth + 1, sink_list)
-            self._walk(pipeline, tp.get("ifFalseActivities", []) or [],
+            self._walk(pipeline, lst(tp.get("ifFalseActivities")),
                        f"{base} [False]", depth + 1, sink_list)
         elif atype == "Switch":
-            for case in tp.get("cases", []) or []:
-                self._walk(pipeline, case.get("activities", []) or [],
+            for case in lst(tp.get("cases")):
+                self._walk(pipeline, lst(case.get("activities")),
                            f"{base} [Case={case.get('value','?')}]", depth + 1, sink_list)
-            self._walk(pipeline, tp.get("defaultActivities", []) or [],
+            self._walk(pipeline, lst(tp.get("defaultActivities")),
                        f"{base} [Default]", depth + 1, sink_list)
 
     @staticmethod
@@ -696,7 +726,7 @@ class Analyzer:
         indeg = {n: 0 for n in names}
         succ = defaultdict(list)
         for a in acts:
-            for dep in a.get("dependsOn", []) or []:
+            for dep in lst(a.get("dependsOn")):
                 parent = dep.get("activity")
                 if parent in indeg:
                     indeg[a.get("name", "?")] += 1
@@ -721,10 +751,10 @@ class Analyzer:
 
     def _activity(self, pipeline: str, act: dict, scope: str, depth: int) -> dict:
         name, atype = act.get("name", "?"), act.get("type", "?")
-        tp = act.get("typeProperties", {}) or {}
+        tp = obj(act.get("typeProperties"))
         cat, default_desc = ACTIVITY_CATALOG.get(atype, ("other", ""))
         ref = f"{pipeline}::{name}"
-        policy = act.get("policy", {}) or {}
+        policy = obj(act.get("policy"))
         detail, reads, writes, extras = self._extract(pipeline, name, act, atype, tp, ref)
         row = {
             "activity": name, "type": atype, "category": cat, "scope": scope,
@@ -735,8 +765,8 @@ class Analyzer:
             "detail": squeeze(detail, 400),
             "dependsOn": [
                 {"activity": d.get("activity"),
-                 "on": ",".join(d.get("dependencyConditions", []) or [])}
-                for d in act.get("dependsOn", []) or []
+                 "on": ",".join(lst(d.get("dependencyConditions")))}
+                for d in lst(act.get("dependsOn"))
             ],
         }
         dyn_extract = extras.pop("_dyn", False)
@@ -765,13 +795,13 @@ class Analyzer:
         dyn = False
 
         if atype == "Copy":
-            src, snk = tp.get("source", {}) or {}, tp.get("sink", {}) or {}
-            for item in act.get("inputs", []) or []:
+            src, snk = obj(tp.get("source")), obj(tp.get("sink"))
+            for item in lst(act.get("inputs")):
                 if item.get("type") == "DatasetReference":
                     reads.append(self.dataset_node(item.get("referenceName", ""),
                                                    "copy source", ref,
                                                    item.get("parameters")))
-            for item in act.get("outputs", []) or []:
+            for item in lst(act.get("outputs")):
                 if item.get("type") == "DatasetReference":
                     writes.append(self.dataset_node(item.get("referenceName", ""),
                                                     "copy sink", ref,
@@ -798,8 +828,8 @@ class Analyzer:
                 bits.append("pre-copy: " + squeeze(pre, 150))
             if tp.get("enableStaging"):
                 bits.append("staged copy")
-            tr = tp.get("translator") or {}
-            n_map = len(tr.get("mappings", []) or [])
+            tr = obj(tp.get("translator"))
+            n_map = len(lst(tr.get("mappings")))
             if n_map:
                 bits.append(f"explicit column mapping ({n_map} cols)")
             dyn = is_dynamic(query) or is_dynamic(pre)
@@ -807,12 +837,12 @@ class Analyzer:
                       squeeze(query or proc, 200), dynamic=dyn)
 
         elif atype == "Lookup":
-            ds = (tp.get("dataset") or {}).get("referenceName", "")
-            src = tp.get("source", {}) or {}
+            ds = obj(tp.get("dataset")).get("referenceName", "")
+            src = obj(tp.get("source"))
             query = as_text(src.get("sqlReaderQuery") or src.get("query"))
             if ds:
                 reads.append(self.dataset_node(ds, "lookup", ref,
-                                               (tp.get("dataset") or {}).get("parameters")))
+                                               obj(tp.get("dataset")).get("parameters")))
             r_k, _ = self.sql_nodes(query, ref, read_role="lookup (query)")
             reads += r_k
             bits.append("first row only" if tp.get("firstRowOnly", True) else "full rowset")
@@ -821,22 +851,22 @@ class Analyzer:
             self.edge(reads, [], "Lookup", pipeline, name, squeeze(query, 150))
 
         elif atype in ("GetMetadata", "Validation", "Delete"):
-            ds = (tp.get("dataset") or {}).get("referenceName", "")
+            ds = obj(tp.get("dataset")).get("referenceName", "")
             role = {"Delete": "deleted", "GetMetadata": "metadata read",
                     "Validation": "existence check"}[atype]
             if ds:
                 key = self.dataset_node(ds, role, ref,
-                                        (tp.get("dataset") or {}).get("parameters"))
+                                        obj(tp.get("dataset")).get("parameters"))
                 (writes if atype == "Delete" else reads).append(key)
             if atype == "GetMetadata":
-                bits.append("fields: " + ", ".join(as_text(f) for f in tp.get("fieldList", []) or []))
+                bits.append("fields: " + ", ".join(as_text(f) for f in lst(tp.get("fieldList"))))
             if atype == "Delete":
                 bits.append("destructive")
                 self.edge([], writes, "Delete", pipeline, name, "destructive")
 
         elif atype == "SqlServerStoredProcedure":
             proc = as_text(tp.get("storedProcedureName"))
-            ls = (act.get("linkedServiceName") or {}).get("referenceName", "")
+            ls = obj(act.get("linkedServiceName")).get("referenceName", "")
             pk = self.node("stored_procedure", proc, "executed", ref,
                            detail=f"on {ls}" if ls else "",
                            endpoint={**self._ls_endpoint(ls),
@@ -846,7 +876,7 @@ class Analyzer:
                 self.track_ref("linked_service", ls, ref)
                 self.node("linked_service", ls, "proc target", ref)
             writes.append(pk)
-            params = tp.get("storedProcedureParameters", {}) or {}
+            params = obj(tp.get("storedProcedureParameters"))
             bits.append(f"proc: {proc}")
             if params:
                 bits.append("params: " + ", ".join(params.keys()))
@@ -854,12 +884,12 @@ class Analyzer:
                       "logic inside the proc is not visible to ADF", opaque=True)
 
         elif atype == "Script":
-            ls = (act.get("linkedServiceName") or {}).get("referenceName", "")
+            ls = obj(act.get("linkedServiceName")).get("referenceName", "")
             if ls:
                 self.track_ref("linked_service", ls, ref)
                 self.node("linked_service", ls, "script target", ref)
             all_r, all_w, texts = [], [], []
-            for s in tp.get("scripts", []) or []:
+            for s in lst(tp.get("scripts")):
                 text = as_text(s.get("text"))
                 r_k, w_k = self.sql_nodes(text, ref, read_role="read (script)",
                                           write_role="written (script)")
@@ -875,19 +905,19 @@ class Analyzer:
             self.edge(all_r, all_w, "Script", pipeline, name, dynamic=dyn)
 
         elif atype == "ExecutePipeline":
-            child = (tp.get("pipeline") or {}).get("referenceName", "")
+            child = self.named("pipeline", obj(tp.get("pipeline")).get("referenceName", ""))
             self.track_ref("pipeline", child, ref)
             wait = tp.get("waitOnCompletion", True)
             self.pipeline_calls.append({"parent": pipeline, "child": child,
                                         "activity": name, "waitOnCompletion": bool(wait)})
             extras["invokesPipeline"] = child
             bits.append(f"invokes: {child}" + ("" if wait else " (fire-and-forget)"))
-            params = tp.get("parameters", {}) or {}
+            params = obj(tp.get("parameters"))
             if params:
                 bits.append("params: " + squeeze(json.dumps(params, default=str), 250))
 
-        elif atype == "ExecuteDataFlow":
-            df_ref = tp.get("dataFlow") or tp.get("dataflow") or {}
+        elif atype in ("ExecuteDataFlow", "ExecuteWranglingDataflow"):
+            df_ref = tp.get("dataFlow") or obj(tp.get("dataflow"))
             df = df_ref.get("referenceName", "") if isinstance(df_ref, dict) else ""
             self.track_ref("dataflow", df, ref)
             extras["invokesDataflow"] = df
@@ -898,7 +928,14 @@ class Analyzer:
                 if df_ref.get("datasetParameters"):
                     bits.append("dataset params: " + squeeze(
                         json.dumps(df_ref["datasetParameters"], default=str), 250))
-            doc = self.document_dataflow(df, ref, pipeline, name)
+            # Power Query data flows name their sinks on the activity, not in the flow.
+            activity_sinks = []
+            for sink in obj(tp.get("sinks")).values():
+                ds = obj(obj(sink).get("dataset")).get("referenceName", "")
+                if ds:
+                    activity_sinks.append(self.dataset_node(ds, "dataflow sink", ref))
+            doc = self.document_dataflow(df, ref, pipeline, name, activity_sinks)
+            writes += activity_sinks
             if doc:
                 reads += doc["sourceKeys"]
                 writes += doc["sinkKeys"]
@@ -912,13 +949,13 @@ class Analyzer:
                              or tp.get("notebook") or "")
             kind = "notebook" if "Notebook" in atype else "code_artifact"
             key = self.node(kind, target or f"{atype} in {name}", "executed", ref)
-            ls = (act.get("linkedServiceName") or {}).get("referenceName", "")
+            ls = obj(act.get("linkedServiceName")).get("referenceName", "")
             if ls:
                 self.track_ref("linked_service", ls, ref)
                 self.node("linked_service", ls, "compute", ref)
             if target:
                 bits.append(f"{kind}: {target}")
-            params = tp.get("baseParameters") or tp.get("parameters") or {}
+            params = tp.get("baseParameters") or obj(tp.get("parameters"))
             if params:
                 bits.append("params: " + squeeze(json.dumps(params, default=str), 250))
             self.edge([key], [key], atype, pipeline, name,
@@ -945,7 +982,7 @@ class Analyzer:
             bits.append("if " + squeeze(tp.get("expression"), 200))
         elif atype == "Switch":
             bits.append("on " + squeeze(tp.get("on"), 150) + " | cases: "
-                        + ", ".join(str(c.get("value")) for c in tp.get("cases", []) or []))
+                        + ", ".join(str(c.get("value")) for c in lst(tp.get("cases"))))
         elif atype == "Filter":
             bits.append(f"{squeeze(tp.get('items'),120)} where {squeeze(tp.get('condition'),120)}")
         elif atype in ("SetVariable", "AppendVariable"):
@@ -969,11 +1006,11 @@ class Analyzer:
         eps: Dict[str, Dict[str, dict]] = {"source": {}, "sink": {}}
         for key, bucket in (("sources", "source"), ("sinks", "sink")):
             role = f"dataflow {bucket}"
-            for item in tp.get(key, []) or []:
+            for item in lst(tp.get(key)):
                 nm = item.get("name", "?")
-                ds = (item.get("dataset") or {}).get("referenceName", "")
-                ls = (item.get("linkedService") or {}).get("referenceName", "")
-                fl = (item.get("flowlet") or {}).get("referenceName", "")
+                ds = obj(item.get("dataset")).get("referenceName", "")
+                ls = obj(item.get("linkedService")).get("referenceName", "")
+                fl = obj(item.get("flowlet")).get("referenceName", "")
                 node_key, label = "", nm
                 if ds:
                     node_key = self.dataset_node(ds, role, ref)
@@ -990,9 +1027,11 @@ class Analyzer:
         return eps
 
     def document_dataflow(self, df_name: str, ref: str,
-                          pipeline: str = "", activity: str = "") -> Optional[dict]:
+                          pipeline: str = "", activity: str = "",
+                          activity_sinks: Optional[List[str]] = None) -> Optional[dict]:
         if not df_name:
             return None
+        df_name = self.named("dataflow", df_name)
         props = self.store["dataflow"].get(df_name)
         if not props:
             return None
@@ -1003,27 +1042,40 @@ class Analyzer:
             return existing
         self._df_done.add(df_name)
 
-        tp = props.get("typeProperties", {}) or {}
+        tp = obj(props.get("typeProperties"))
         eps = self._df_endpoints(tp, ref)
-        steps = parse_dataflow_script(tp)
-        if not steps:
+        wrangling = props.get("type") == "WranglingDataFlow"
+        # Without a data flow script (Power Query flows, older flows that list
+        # their transformations), internal lineage is unknown: every source may
+        # feed every sink. Say so rather than calling steps dead.
+        scripted = not wrangling
+        steps = parse_dataflow_script(tp) if scripted else []
+        if wrangling:
             steps = ([{"name": s.get("name", "?"), "op": "source", "inputs": [],
                        "inputs_raw": [], "streams": [], "config": ""}
-                      for s in tp.get("sources", []) or []]
+                      for s in lst(tp.get("sources"))]
+                     + [{"name": "Power Query", "op": "powerQuery",
+                         "inputs": [s.get("name", "?") for s in lst(tp.get("sources"))],
+                         "inputs_raw": [], "streams": [], "config": squeeze(tp.get("script"), 400)}])
+        elif not steps:
+            scripted = False
+            steps = ([{"name": s.get("name", "?"), "op": "source", "inputs": [],
+                       "inputs_raw": [], "streams": [], "config": ""}
+                      for s in lst(tp.get("sources"))]
                      + [{"name": t.get("name", "?"), "op": "transformation", "inputs": [],
                          "inputs_raw": [], "streams": [], "config": ""}
-                        for t in tp.get("transformations", []) or []]
+                        for t in lst(tp.get("transformations"))]
                      + [{"name": s.get("name", "?"), "op": "sink", "inputs": [],
                          "inputs_raw": [], "streams": [], "config": ""}
-                        for s in tp.get("sinks", []) or []])
-            self.warn("warning", "data flow",
-                      f"Data flow '{df_name}' has no script — transformation logic and "
-                      f"internal lineage are unavailable.")
+                        for s in lst(tp.get("sinks"))])
+            self.warn("info", "data flow",
+                      f"Data flow '{df_name}' lists its transformations without a script; "
+                      f"each sink is assumed to depend on every source.")
 
         order = dataflow_exec_order(steps)
-        dead = dataflow_dead_ends(steps)
+        dead = dataflow_dead_ends(steps) if scripted else []
         sink_names = list(eps["sink"]) or [s["name"] for s in steps if s["op"] == "sink"]
-        traces = trace_dataflow(steps, sink_names)
+        traces = trace_dataflow(steps, sink_names) if scripted else []
 
         for sink, sources, chain in traces:
             src_keys = [eps["source"].get(s, {}).get("key") for s in sources]
@@ -1031,6 +1083,12 @@ class Analyzer:
             self.edge([k for k in src_keys if k], [snk_key] if snk_key else [],
                       f"DataFlow:{df_name}", pipeline or "(unreferenced)",
                       activity or df_name, " → ".join(chain))
+        if not scripted:
+            all_sources = [v["key"] for v in eps["source"].values() if v["key"]]
+            all_sinks = [v["key"] for v in eps["sink"].values() if v["key"]] + list(activity_sinks or [])
+            self.edge(all_sources, all_sinks, f"DataFlow:{df_name}", pipeline or "(unreferenced)",
+                      activity or df_name,
+                      "Power Query mash-up" if wrangling else "no script: every source may feed every sink")
 
         doc = {
             "name": df_name,
@@ -1135,6 +1193,8 @@ class Analyzer:
         self.triggers = [describe_trigger(n, props)
                          for n, props in sorted(self.store["trigger"].items())]
         for t in self.triggers:
+            t["startsPipelines"] = [self.named("pipeline", pl) for pl in t["startsPipelines"]]
+        for t in self.triggers:
             for pl in t["startsPipelines"]:
                 self.track_ref("pipeline", pl, f"trigger {t['name']}")
                 trigger_starts[pl].append(t["name"])
@@ -1182,6 +1242,15 @@ class Analyzer:
         self.resolution = []
         for (kind, ref_name), refs in sorted(self.refs.items()):
             resolved = ref_name in self.store[self.RESOLVABLE[kind]]
+            deploy_param = arm_parameter(ref_name)
+            if deploy_param and not resolved:
+                # Templates leave connections to be chosen at deployment.
+                self.resolution.append({
+                    "kind": kind, "name": ref_name, "status": "deployment parameter",
+                    "impact": f"chosen when the template is deployed (parameter '{deploy_param}')",
+                    "referencedBy": sorted(refs),
+                })
+                continue
             self.resolution.append({
                 "kind": kind, "name": ref_name,
                 "status": "resolved" if resolved else "MISSING",
@@ -1275,7 +1344,7 @@ class Analyzer:
                           f"{ent['label']} is touched but participates in no data "
                           f"movement (read-only reference or metadata-only use).")
 
-        for fname, meta in (self.store.get("__skipped__") or {}).items():
+        for fname, meta in obj(self.store.get("__skipped__")).items():
             self.warn("warning", "input",
                       f"Input file '{fname}' could not be parsed and was skipped: "
                       f"{meta['error']}")
