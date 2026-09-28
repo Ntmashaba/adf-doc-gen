@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import unquote, urlparse
 
-from .common import _norm_host
+from .common import SQL_SERVER_SYSTEMS, _norm_host, effective_port
 from .details import json_script
 from .sql_harvest import harvest_sql
 
@@ -57,13 +57,24 @@ def load_payloads(path) -> List[Tuple[str, dict]]:
 
 
 def _name(schema: Optional[str], obj: Optional[str]) -> str:
-    return ".".join(x.strip("[]\"`").lower() for x in (schema, obj) if x)
+    """schema.object as written; case is compared separately (collation is unknown)."""
+    return ".".join(x.strip("[]\"`") for x in (schema, obj) if x)
+
+
+def _port_of(server) -> Optional[int]:
+    m = re.search(r"[,:](\d+)$", str(server or "").split("/")[0])
+    return int(m.group(1)) if m else None
 
 
 def _url_parts(url: str) -> Tuple[str, str]:
-    """(host, path) of a storage URL, path without leading slash, unescaped, lower-case."""
+    """(host, path) of a storage URL, path without leading slash.
+
+    The host is case-insensitive; the path keeps its case, and an encoded "/"
+    (%2F) stays encoded so it cannot turn into a different folder.
+    """
     u = urlparse(url if "://" in url else "https://" + url)
-    return (u.hostname or "").lower(), unquote(u.path).strip("/").lower()
+    path = re.sub(r"%2[fF]", "%252F", u.path)
+    return (u.hostname or "").lower(), unquote(path).strip("/")
 
 
 def _storage_host(host: str) -> str:
@@ -82,39 +93,52 @@ def adf_index(payloads: List[Tuple[str, dict]]) -> List[dict]:
             if e.get("kind") not in ("table", "file_path", "dataset", "inline_dataset"):
                 continue
             ep = e.get("endpoint") or {}
-            writers, readers = [], []
+            writers, readers, deleters = [], [], []
             for u in e.get("usage", []):
                 entry = {"pipeline": u.get("pipeline"), "activity": u.get("activity"),
                          "uncertain": bool(u.get("dynamic") or u.get("opaque") or e.get("dynamic")),
                          "triggers": (pipes.get(u.get("pipeline")) or {}).get("startedBy", [])}
-                (writers if u.get("operation") in ("write", "delete") else readers).append(entry)
+                # Deleting an object does not produce it.
+                {"write": writers, "delete": deleters}.get(u.get("operation"), readers).append(entry)
             host = _norm_host(ep.get("server") or ep.get("url"))
             rows.append({
                 "factory": p.get("title", fname), "file": fname, "key": e["key"], "label": e["label"],
                 "kind": e["kind"], "host": host, "storage": _storage_host(host),
-                "database": (ep.get("database") or "").lower(),
-                "container": (ep.get("container") or "").lower(),
-                "path": (ep.get("path") or "").lower(),
+                "port": effective_port(ep.get("system"), ep.get("server"), ep.get("port")),
+                # a SQL Server-family endpoint without a port is known to use the default
+                "portKnown": bool(ep.get("port")) or ep.get("system") in SQL_SERVER_SYSTEMS,
+                "database": ep.get("database") or "",
+                "container": (ep.get("container") or "").lower(),   # Azure container names are lower-case
+                "path": ep.get("path") or "",
                 "name": _name(ep.get("schema"), ep.get("object")) if ep.get("object") else "",
                 "dynamic": bool(e.get("dynamic")), "writers": writers, "readers": readers,
+                "deleters": deleters,
             })
     return rows
 
 
-def _match_table(src_host, src_db, name, adf):
+def _match_table(src_host, src_db, name, adf, src_port=None, src_port_known=False):
+    """Case-insensitive candidates; exact only when every part matches as written.
+
+    A difference only in letter case is "possible": whether it is the same object
+    depends on a collation the definitions do not reveal.
+    """
     hits = []
-    obj = name.split(".")[-1]
+    lname, ldb = name.lower(), src_db.lower()
+    obj = lname.split(".")[-1]
     for a in adf:
         if a["kind"] not in ("table", "dataset", "inline_dataset") or not a["name"]:
             continue
-        same_name = a["name"] == name or (("." not in name or "." not in a["name"])
-                                          and a["name"].split(".")[-1] == obj)
+        aname, adb = a["name"].lower(), a["database"].lower()
+        same_name = aname == lname or (("." not in lname or "." not in aname)
+                                       and aname.split(".")[-1] == obj)
         if not same_name:
             continue
-        host_ok = bool(src_host and a["host"]) and src_host == a["host"]
+        host_ok = bool(src_host and a["host"]) and src_host == a["host"] and src_port == a["port"]
         db_ok = bool(src_db and a["database"]) and src_db == a["database"]
         conflict = (src_host and a["host"] and src_host != a["host"]) or \
-                   (src_db and a["database"] and src_db != a["database"])
+                   (src_port_known and a["portKnown"] and src_port != a["port"]) or \
+                   (ldb and adb and ldb != adb)
         if host_ok and db_ok and a["name"] == name and not a["dynamic"]:
             hits.append((a, "exact"))
         elif not conflict:
@@ -132,8 +156,11 @@ def _match_file(url, adf):
         full = "/".join(x for x in (a["container"], a["path"]) if x) or a["path"]
         if not full:
             continue
-        if storage == a["storage"] and (path == full or path.startswith(full + "/")):
+        if storage == a["storage"] and path == full:
             hits.append((a, "possible" if a["dynamic"] else "exact"))
+        elif storage == a["storage"] and path.startswith(full + "/"):
+            # Writing a folder does not prove this file was produced there.
+            hits.append((a, "possible"))
         elif storage == a["storage"] and full.split("/")[-1] == path.split("/")[-1]:
             hits.append((a, "possible"))
     return hits
@@ -147,21 +174,23 @@ def build_bridge(adf_path, pbi_path, output) -> Path:
             if not isinstance(s, dict) or s.get("sourceType") in SKIP_TYPES:
                 continue
             host = _norm_host(s.get("server"))
-            db = (s.get("database") or "").lower()
+            port = effective_port(s.get("sourceType"), s.get("server"), _port_of(s.get("server")))
+            port_known = bool(_port_of(s.get("server"))) or s.get("sourceType") in SQL_SERVER_SYSTEMS
+            db = s.get("database") or ""
             targets = []           # (how the object was named, name)
             server = str(s.get("server") or "")
             file_like = server.startswith(("http", "\\\\")) or re.match(r"^[A-Za-z]:[\\/]", server)
             if s.get("object") and not file_like:
                 targets.append(("table", _name(s.get("schema"), s.get("object"))))
             for t in harvest_sql(s.get("sql") or "")[0]:
-                parts = [x.strip("[]\"`").lower() for x in t.split(".")]
+                parts = [x.strip("[]\"`") for x in t.split(".")]
                 targets.append(("native query", ".".join(parts[-2:])))
             hits = []
             for how, name in targets:
-                hits += [(a, level, how) for a, level in _match_table(host, db, name, adf)]
+                hits += [(a, level, how) for a, level in _match_table(host, db, name, adf, port, port_known)]
             if str(s.get("server", "")).startswith("http"):
                 hits += [(a, level, "file") for a, level in _match_file(s["server"], adf)]
-            producers, consumers, best = [], [], "none"
+            producers, consumers, deleted_by, best = [], [], [], "none"
             for a, level, how in hits:
                 for w in a["writers"]:
                     lv = "possible" if (w["uncertain"] or level == "possible") else "exact"
@@ -171,6 +200,9 @@ def build_bridge(adf_path, pbi_path, output) -> Path:
                 for r in a["readers"]:
                     consumers.append({"factory": a["factory"], "pipeline": r["pipeline"],
                                       "object": a["label"]})
+                for d in a["deleters"]:
+                    deleted_by.append({"factory": a["factory"], "pipeline": d["pipeline"],
+                                       "activity": d["activity"], "object": a["label"]})
             if producers:
                 best = "exact" if any(x["level"] == "exact" for x in producers) else "possible"
             elif hits:
@@ -181,7 +213,7 @@ def build_bridge(adf_path, pbi_path, output) -> Path:
                 "server": s.get("server", ""), "database": s.get("database", ""),
                 "object": ".".join(x for x in (s.get("schema"), s.get("object")) if x) or s.get("object", ""),
                 "status": s.get("status", ""), "match": best,
-                "producers": producers, "alsoReadBy": consumers[:20],
+                "producers": producers, "alsoReadBy": consumers[:20], "deletedBy": deleted_by[:20],
             })
     factories = sorted({a["factory"] for a in adf})
     html = TEMPLATE.read_text(encoding="utf-8").replace(

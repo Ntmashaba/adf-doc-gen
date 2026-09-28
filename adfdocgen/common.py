@@ -64,13 +64,17 @@ def is_dynamic(text: Any) -> bool:
 
 
 def canon_table(name: str) -> str:
-    """Normalise a table reference so DB1.[dbo].[Fact] and dbo.Fact become one node."""
+    """Normalise a table reference so DB1.[dbo].[Fact] and dbo.Fact become one node.
+
+    Letter case is kept: whether dbo.Sales and dbo.SALES are one table depends on a
+    collation the definitions do not reveal, so they are not merged on a guess.
+    """
     parts = [p.strip().strip("[]\"`") for p in re.split(r"\.(?![^\[]*\])", name or "") if p.strip()]
     if not parts:
         return ""
     # Keep the database when it is named: SalesDW.dbo.Fact and Archive.dbo.Fact are different tables.
     parts = parts[-3:]
-    return ".".join(p.lower() for p in parts)
+    return ".".join(parts)
 
 
 def _norm_host(value: Optional[str]) -> str:
@@ -82,6 +86,28 @@ def _norm_host(value: Optional[str]) -> str:
     return v
 
 
+# Data Factory system names, plus pbi-doc-gen's name for Synapse (used by the bridge).
+SQL_SERVER_SYSTEMS = {"SQL Server", "Azure SQL Database", "Azure SQL Managed Instance", "Azure Synapse SQL",
+                      "Azure Synapse / SQL"}
+SQL_SERVER_DEFAULT_PORT = 1433
+
+
+def effective_port(system: Optional[str], server: Optional[str], port) -> Optional[int]:
+    """The port that distinguishes an endpoint, or None for the connector default.
+
+    SQL Server-family connectors reach a default instance on 1433 when no port is
+    given, so "host" and "host,1433" are one endpoint. A different port, a named
+    instance, or any other connector keeps the port it was given.
+    """
+    if not port:
+        return None
+    port = int(port)
+    if (port == SQL_SERVER_DEFAULT_PORT and system in SQL_SERVER_SYSTEMS
+            and "\\" not in (server or "")):
+        return None
+    return port
+
+
 def physical_key(kind: str, label: str, endpoint: Optional[dict], scope: str = "") -> str:
     """Identity of a physical object: system location + database + object/path.
 
@@ -91,11 +117,15 @@ def physical_key(kind: str, label: str, endpoint: Optional[dict], scope: str = "
     """
     ep = endpoint or {}
     host = _norm_host(ep.get("server") or ep.get("url"))
+    port = effective_port(ep.get("system"), ep.get("server"), ep.get("port"))
+    if host and port:
+        # One host can serve different instances on different ports.
+        host = f"{host}:{port}"
     where = host or (f"ls:{scope.lower()}" if scope else "")
     if kind in ("table", "stored_procedure"):
         name = canon_table(label)
         parts = name.split(".")
-        db = (ep.get("database") or "").lower()
+        db = ep.get("database") or ""
         if len(parts) == 3:
             db, name = parts[0], ".".join(parts[1:])
         loc = "/".join(x for x in (where, db) if x)
@@ -117,7 +147,7 @@ def split_table(name: str) -> Tuple[Optional[str], Optional[str]]:
     return parts[-2], parts[-1]
 
 
-EMPTY_ENDPOINT = {"system": None, "server": None, "database": None, "schema": None,
+EMPTY_ENDPOINT = {"system": None, "server": None, "port": None, "database": None, "schema": None,
                   "object": None, "path": None, "url": None, "container": None}
 
 

@@ -103,7 +103,7 @@ def describe_linked_service(name: str, props: dict) -> dict:
         "name": name,
         "type": ls_type,
         "system": friendly_system(ls_type),
-        "server": None, "database": None, "url": None,
+        "server": None, "port": None, "database": None, "url": None,
         "auth": None,
         "keyVault": False,
         "inlineCredential": False,
@@ -148,7 +148,10 @@ def describe_linked_service(name: str, props: dict) -> dict:
     m = CONN_SERVER.search(conn)
     if m:
         # "tcp:host,1433" is how SQL connection strings spell a host and port.
-        out["server"] = re.sub(r",\d+$", "", re.sub(r"(?i)^tcp:", "", m.group(1).strip()))
+        server = re.sub(r"(?i)^tcp:", "", m.group(1).strip())
+        port = re.search(r",(\d+)$", server)
+        out["server"] = server[:port.start()] if port else server
+        out["port"] = int(port.group(1)) if port else None
     m = CONN_DB.search(conn)
     if m:
         out["database"] = m.group(1).strip()

@@ -165,12 +165,19 @@ the Data Factory pipelines that write it and the triggers that start them:
 python generate_docs.py --bridge adf-docs pbi-docs -o powerbi-adf-bridge.html
 ```
 
-* **exact**: same server, database and object (or the same storage account and
-  path; blob and dfs endpoints of one account count as the same).
-* **possible**: the names match but the location is not proven, or the
-  pipeline's target is resolved at runtime or hidden in code.
+* **exact**: same server and port, database and object, spelled the same (or the
+  same storage account and file path; blob and dfs endpoints of one account count
+  as the same).
+* **possible**: the names match but the location is not proven, the names differ
+  only in letter case (the collation is unknown), a pipeline writes the folder the
+  file is in, or the pipeline's target is resolved at runtime or hidden in code.
 * **read only**: factories read the object but none of them writes it.
 * **no match**: nothing in the supplied factories touches it.
+
+Deleting an object never makes a pipeline its producer; deletions are listed
+separately. For SQL Server-family connectors a server with no port and the same
+server on 1433 are one endpoint; any other port is a different server, both
+here and in the factory's own lineage. File paths keep their letter case.
 
 Views and procedures are matched by their own name only; the page never claims
 the tables underneath a view. Native SQL queries in Power BI are read for the
@@ -314,7 +321,7 @@ stable between runs of the same input.
 Every source/sink object carries a normalised endpoint:
 
 ```json
-{"system": …, "server": …, "database": …, "schema": …,
+{"system": …, "server": …, "port": …, "database": …, "schema": …,
  "object": …, "path": …, "url": …, "container": …}
 ```
 
