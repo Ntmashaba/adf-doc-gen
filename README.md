@@ -26,6 +26,16 @@ contract** (see below) so they can later be joined end-to-end.
 * **Nothing else.** No pip installs, no internet access, no Azure access.
   Everything — parsing, analysis, HTML, Word — is standard library only.
 
+### Installing as a package (optional)
+
+```
+pip install .
+adf-doc-gen path/to/adf-repo -o factory_docs.html
+```
+
+`adf-doc-gen` accepts exactly the same options as `python generate_docs.py`. The
+package version is `adfdocgen.__version__`.
+
 ## Getting the JSON out of ADF
 
 The tool accepts three input shapes; use whichever fits how your factory is

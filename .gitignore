@@ -1,3 +1,5 @@
 __pycache__/
 *.pyc
-examples/documentation
+examples/documentationbuild/
+*.egg-info/
+dist/

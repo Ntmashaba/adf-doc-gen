@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adf-doc-gen"
+dynamic = ["version"]
+description = "Self-contained HTML documentation generator for Azure Data Factory."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+adf-doc-gen = "generate_docs:cli"
+
+[tool.setuptools]
+packages = ["adfdocgen"]
+py-modules = ["generate_docs"]
+
+[tool.setuptools.package-data]
+adfdocgen = ["*.html", "*.css", "*.js"]
+
+[tool.setuptools.dynamic]
+version = { attr = "adfdocgen.__version__" }
