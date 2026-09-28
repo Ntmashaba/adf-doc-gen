@@ -29,6 +29,8 @@ class ViewerBridge(unittest.TestCase):
         self.assertIn('id="act-${slug(pipeline+"/"+a.activity)}"', text)
         self.assertIn("if(ev.source!==window.parent) return;", text)
         self.assertIn("if(window.parent===window", text)
+        self.assertIn("published, read-only copy", text)
+        self.assertIn("if(DATA.published) return;", text)
 
 
 if __name__ == "__main__":

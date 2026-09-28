@@ -1260,6 +1260,7 @@ function captureDetails(){
         : "No unsaved changes. Details are kept when this document is regenerated over the same file.";
 }
 function saveDetailsHtml(){
+  if(DATA.published) return;
   captureDetails();
   if(document.getElementById("det-save").disabled) return;
   const clone = document.documentElement.cloneNode(true);
@@ -1280,8 +1281,11 @@ function rDetails(){
     : `<label class="field"><span>${esc(DETAIL_FIELDS[k])}</span><input id="det-${k}" value="${esc(DETAILS[k])}" oninput="captureDetails()"></label>`;
   return `<h1>Factory details</h1>
   <p class="sub">Who owns this factory, where its source lives and how to support it. These details are kept in this file, survive regeneration over the same file, and are shown on the documentation home. Record references only: never passwords, keys or tokens.</p>
-  <div class="card details-grid">${Object.keys(DETAIL_FIELDS).map(field).join("")}</div>
-  <div id="det-savebar" class="savebar"><p id="det-status" role="status"></p><button class="primary-btn" id="det-save" onclick="saveDetailsHtml()">Download updated HTML</button></div>
+  ${DATA.published
+    ? `<p class="sub det-readonly" role="note">This is a published, read-only copy. Edit document metadata in the library, or regenerate the documentation from the source.</p>
+  <div class="card kvl">${Object.keys(DETAIL_FIELDS).map(k=>`<div class="k">${esc(DETAIL_FIELDS[k])}</div><div>${esc(DETAILS[k]||"Not recorded")}</div>`).join("")}</div>`
+    : `<div class="card details-grid">${Object.keys(DETAIL_FIELDS).map(field).join("")}</div>
+  <div id="det-savebar" class="savebar"><p id="det-status" role="status"></p><button class="primary-btn" id="det-save" onclick="saveDetailsHtml()">Download updated HTML</button></div>`}
   <h2>How this document was generated</h2>
   <div class="card kvl">
     <div class="k">Generated</div><div>${esc(DATA.generated)} by ${esc(DATA.generator)} (payload version ${esc(DATA.schemaVersion)})</div>
