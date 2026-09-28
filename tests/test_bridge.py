@@ -42,6 +42,11 @@ class Bridge(unittest.TestCase):
             src("Watermark", "SQL Server", "contoso-sales.database.windows.net", "SalesDW",
                 sql="SELECT * FROM etl.Watermark"),
             src("Calc", "Calculated (DAX)", ""),
+            src("Archive port", "SQL Server", "contoso-archive.database.windows.net,1433", "ArchiveDW", "dbo", "FactSales"),
+            src("Other port", "SQL Server", "contoso-archive.database.windows.net,1444", "ArchiveDW", "dbo", "FactSales"),
+            src("Case only", "SQL Server", "contoso-archive.database.windows.net", "ArchiveDW", "dbo", "FACTSALES"),
+            src("Folder case", "Azure Blob Storage",
+                "https://contosolake.blob.core.windows.net/curated/SALES/orders_enriched/part-0.parquet"),
         ]}
         (self.tmp / "pbi" / "report.json").write_text(json.dumps(pbi))
         out = self.tmp / "bridge.html"
@@ -60,9 +65,17 @@ class Bridge(unittest.TestCase):
         self.assertEqual(self.rows["Fact archive"]["producers"][0]["pipeline"], "PL_Transform_Sales")
         self.assertEqual(self.rows["Fact live"]["match"], "read only")
         self.assertEqual(self.rows["Other server"]["match"], "none")
-        self.assertEqual(self.rows["Enriched"]["match"], "exact")
+        # A pipeline writing the folder does not prove it produced this file (handoff A22).
+        self.assertEqual(self.rows["Enriched"]["match"], "possible")
         self.assertEqual(self.rows["Watermark"]["match"], "read only")
         self.assertNotIn("Calc", self.rows)
+        # SQL Server's default port equals no port; a different port is another server (A30).
+        self.assertEqual(self.rows["Archive port"]["match"], "exact")
+        self.assertEqual(self.rows["Other port"]["match"], "none")
+        # Case-only differences are not proven equal (collation unknown).
+        self.assertEqual(self.rows["Case only"]["match"], "possible")
+        # Paths keep their case: SALES is not sales.
+        self.assertEqual(self.rows["Folder case"]["match"], "none")
         # producers carry the triggers that start them
         self.assertIn("TR_Daily_0600", self.rows["Fact archive"]["producers"][0]["triggers"])
 

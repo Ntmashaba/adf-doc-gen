@@ -145,6 +145,7 @@ class Analyzer(PipelineMixin, DataflowMixin, GraphMixin, ChecksMixin, OutputMixi
         ep = dict(EMPTY_ENDPOINT)
         ep["system"] = info["system"]
         ep["server"] = info["server"]
+        ep["port"] = info.get("port")
         ep["database"] = info["database"]
         ep["url"] = info["url"]
         return ep
@@ -216,7 +217,7 @@ class Analyzer(PipelineMixin, DataflowMixin, GraphMixin, ChecksMixin, OutputMixi
                   write_role="written (SQL)", context: Optional[dict] = None,
                   scope: str = "") -> Tuple[List[str], List[str]]:
         reads, writes, procs = harvest_sql(sql)
-        base = {k: (context or {}).get(k) for k in ("system", "server", "database", "url")}
+        base = {k: (context or {}).get(k) for k in ("system", "server", "port", "database", "url")}
 
         def endpoint(name):
             parts = [x for x in re.split(r"\.(?![^\[]*\])", name) if x]

@@ -44,8 +44,9 @@ def render_html(payload: dict, out_path: str | Path) -> Path:
         "<!--__DETAILS__-->",
         f'<script type="application/json" id="{DETAILS_ID}">{json_script(details)}</script>')
     blob = json.dumps(payload, ensure_ascii=False)
-    # keep the embedded JSON from terminating the script block early
-    blob = blob.replace("</", "<\\/")
+    # keep the embedded JSON from terminating the script block early or spelling
+    # another element (e.g. a second manifest); these characters only occur in strings
+    blob = blob.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
     html = (template
             .replace("__TITLE__", payload["title"].replace("<", "&lt;"))
             .replace("/*__DATA__*/null", blob))

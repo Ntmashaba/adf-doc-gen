@@ -57,7 +57,8 @@ function render(){
     <td><span class="badge ${CLS[r.match]}">${LABEL[r.match]}</span></td>
     <td>${r.producers.map(p=>`<div><span class="badge ${CLS[p.level]}">${p.level}</span> ${esc(p.factory)} › <b>${esc(p.pipeline)}</b> :: ${esc(p.activity)}
       <div class="mut">writes ${esc(p.object)}${p.via!=="table"?` (matched via ${esc(p.via)})`:""}${p.triggers.length?` · started by ${p.triggers.map(esc).join(", ")}`:""}</div></div>`).join("")
-      || (r.alsoReadBy.length?`<span class="mut">Read by ${[...new Set(r.alsoReadBy.map(c=>c.factory+" › "+c.pipeline))].map(esc).join(", ")}</span>`:'<span class="mut">—</span>')}</td></tr>`).join("")
+      || (r.alsoReadBy.length?`<span class="mut">Read by ${[...new Set(r.alsoReadBy.map(c=>c.factory+" › "+c.pipeline))].map(esc).join(", ")}</span>`:'<span class="mut">—</span>')}
+      ${(r.deletedBy||[]).length?`<div class="mut">Deleted by ${[...new Set(r.deletedBy.map(d=>d.factory+" › "+d.pipeline+" :: "+d.activity))].map(esc).join(", ")} (deleting does not produce it)</div>`:""}</td></tr>`).join("")
     || '<tr><td colspan="4" class="mut">Nothing matches.</td></tr>'}
   </tbody></table></div>`;
   const q = document.getElementById("q");
