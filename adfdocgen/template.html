@@ -783,7 +783,7 @@ function lineageMap(){
 }
 
 /* ============================================================ pipelines */
-function actRow(a){
+function actRow(a, pipeline){
   const flags = [];
   if(a.dynamic) flags.push('<span class="badge b-warn">dynamic</span>');
   if(a.opaque)  flags.push('<span class="badge b-info">opaque</span>');
@@ -793,7 +793,7 @@ function actRow(a){
   if(a.step===0) flags.push('<span class="badge b-bad">cycle</span>');
   const inv = a.invokesPipeline ? ` → ${pipeLink(a.invokesPipeline)}`
             : a.invokesDataflow ? ` → ${dfLink(a.invokesDataflow)}` : "";
-  return `<details class="act">
+  return `<details class="act"${pipeline?` id="act-${slug(pipeline+"/"+a.activity)}"`:""}>
     <summary><span class="step">${a.step===0?"↺":a.step}</span>${esc(a.activity)} ${catBadge(a.category)} <span class="mut" style="font-weight:400">${esc(a.type)}</span>${inv} ${flags.join(" ")}</summary>
     <div class="body">
       ${a.description?`<p class="mut">${esc(a.description)}</p>`:""}
@@ -832,7 +832,7 @@ function rPipelines(){
     const scopeHtml = Object.entries(scopes).map(([scope, acts])=>`
       ${scope==="(root)"?"":`<div class="scopehdr">inside ${esc(scope)}</div>`}
       ${activityGraph(acts, scope)}
-      ${acts.slice().sort((x,y)=>(x.step===0?99:x.step)-(y.step===0?99:y.step)||x.activity.localeCompare(y.activity)).map(actRow).join("")}`).join("");
+      ${acts.slice().sort((x,y)=>(x.step===0?99:x.step)-(y.step===0?99:y.step)||x.activity.localeCompare(y.activity)).map(a=>actRow(a,p.name)).join("")}`).join("");
     const badges = [
       p.entryPoint?'<span class="badge b-orchestration">entry point</span>':"",
       p.effectiveIncomplete.length?`<span class="badge b-bad" title="Not supplied, so what they read and write is unknown: ${esc(p.effectiveIncomplete.join(", "))}">rollup incomplete</span>`:"",
@@ -1306,6 +1306,51 @@ buildNav();
 switchTab("overview");
 const _render = RENDER.details;
 RENDER.details = () => { const h = _render(); requestAnimationFrame(captureDetails); return h; };
+const VIEWER_VIEWS = {
+  "adf.overview": () => { switchTab("overview"); return true; },
+  "adf.pipeline": a => { if(!PIDX[a.pipeline]) return false; goPipe(a.pipeline); return true; },
+  "adf.activity": a => {
+    if(!PIDX[a.pipeline]) return false;
+    switchTab("pipelines");
+    const pl = document.getElementById("pl-"+slug(a.pipeline)); if(pl) pl.open = true;
+    const act = document.getElementById("act-"+slug(a.pipeline+"/"+a.activity));
+    requestAnimationFrame(() => flash(act ? act.id : "pl-"+slug(a.pipeline)));
+    return !!act;
+  },
+  "adf.trigger": a => { if(!TRIDX[a.trigger]) return false; goTrg(a.trigger); return true; },
+  "adf.dataflow": a => { if(!DFIDX[a.dataflow]) return false; goDf(a.dataflow); return true; },
+};
+/* ============================================================ library viewer bridge
+   bi-doc-viewer protocol v1. Active only when this page is framed (by the library shell).
+   Messages are accepted only from the parent window, with an exact shape; they carry a
+   per-load channel, the revision ID and a registered view ID with string arguments,
+   never HTML, scripts or URLs. */
+(function(){
+  if(window.parent===window || !window.addEventListener) return;
+  let channel = null, revision = null;
+  const str = v => typeof v==="string" && v.length>0 && v.length<=512;
+  const reply = msg => window.parent.postMessage(Object.assign({protocol:"bi-doc-viewer", version:1, channel, revision_id:revision}, msg), "*");
+  window.addEventListener("message", ev => {
+    if(ev.source!==window.parent) return;
+    const m = ev.data;
+    if(!m || typeof m!=="object" || m.protocol!=="bi-doc-viewer" || m.version!==1) return;
+    if(m.type==="hello"){
+      if(channel!==null || !str(m.channel) || !str(m.revision_id)) return;
+      channel = m.channel; revision = m.revision_id;
+      reply({type:"viewer-ready", views:Object.keys(VIEWER_VIEWS)});
+      return;
+    }
+    if(m.type!=="navigate-object" || m.channel!==channel || m.revision_id!==revision) return;
+    if(!str(m.view_id) || !Object.prototype.hasOwnProperty.call(VIEWER_VIEWS, m.view_id)) return;
+    const args = {};
+    if(m.args && typeof m.args==="object") for(const [k,v] of Object.entries(m.args)){
+      if(typeof v==="string"||typeof v==="number"||typeof v==="boolean"){ const s=String(v); if(s.length<=512) args[k]=s; }
+    }
+    let exact = false;
+    try { exact = !!VIEWER_VIEWS[m.view_id](args); } catch(e) { exact = false; }
+    reply({type:"navigated", object_id: str(m.object_id) ? m.object_id : null, exact});
+  });
+})();
 </script>
 </body>
 </html>

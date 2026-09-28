@@ -385,6 +385,10 @@ Two dev checks need more than Python:
   generate one from `tests/fixtures/odd-names` (names with quotes,
   backslashes, Unicode and very long identifiers).
 
+### Viewing inside a documentation library
+
+When a page is shown inside a library shell (an iframe), a small listener accepts `bi-doc-viewer` protocol v1 messages from the parent window only, to open a specific factory object (for example a measure or an activity) when the shell asks. It does nothing when the page is opened directly, and it never loads anything or runs code from a message.
+
 ## Repository layout
 
 ```
