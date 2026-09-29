@@ -1,3 +1,10 @@
+> **This repository is frozen. Development continues in [bi-doc-platform](https://github.com/Ntmashaba/bi-doc-platform).**
+> The engine was imported there as [`components/adf`](https://github.com/Ntmashaba/bi-doc-platform/tree/main/components/adf) from commit
+> `960b4bc` (this repository's last commit), and every change since lives there: fixes, new features and
+> the tests. Please open issues and pull requests against `bi-doc-platform`.
+> This repository stays readable and its history is unchanged, because some things still fetch files from it by
+> commit; it is not archived yet.
+
 # adf-doc-gen
 
 Generate **living documentation** from Azure Data Factory JSON — a single
